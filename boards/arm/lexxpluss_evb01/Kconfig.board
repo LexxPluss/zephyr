@@ -1,0 +1,3 @@
+config BOARD_LEXXPLUSS_EVB01
+	bool "LexxPluss Main Control Unit evaluation board"
+	depends on SOC_STM32F765XX

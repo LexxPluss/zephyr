@@ -1,0 +1,62 @@
+/dts-v1/;
+#include <st/f7/stm32f765Xi.dtsi>
+#include <st/f7/stm32f765b(g-i)tx-pinctrl.dtsi>
+
+/ {
+	model = "LexxPluss Main Control Unit evaluation board";
+	compatible = "st,stm32f765bi-lexxpluss";
+
+	chosen {
+		zephyr,console = &usart3;
+		zephyr,shell-uart = &usart3;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,dtcm = &dtcm;
+		zephyr,can-primary = &can1;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		user_led_0: led_0 {
+			gpios = <&gpioj 0 GPIO_ACTIVE_HIGH>;
+			label = "User LED0";
+		};
+		user_led_1: led_1 {
+			gpios = <&gpioj 1 GPIO_ACTIVE_HIGH>;
+			label = "User LED1";
+		};
+		user_led_2: led_2 {
+			gpios = <&gpioj 2 GPIO_ACTIVE_HIGH>;
+			label = "User LED2";
+		};
+		user_led_3: led_3 {
+			gpios = <&gpioj 3 GPIO_ACTIVE_HIGH>;
+			label = "User LED3";
+		};
+	};
+
+	aliases {
+		led0 = &user_led_0;
+	};
+};
+
+&usart3 {
+	pinctrl-0 = <&usart3_tx_pd8 &usart3_rx_pd9>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&usbotg_fs {
+	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
+	status = "okay";
+};
+
+&can1 {
+	pinctrl-0 = <&can1_rx_ph14 &can1_tx_ph13>;
+	bus-speed = <125000>;
+	sjw = <1>;
+	prop-seg = <0>;
+	phase-seg1 = <6>;
+	phase-seg2 = <5>;
+	status = "okay";
+};

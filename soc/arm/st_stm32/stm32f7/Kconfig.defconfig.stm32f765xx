@@ -1,0 +1,9 @@
+if SOC_STM32F765XX
+
+config SOC
+	default "stm32f765xx"
+
+config NUM_IRQS
+	default 98
+
+endif # SOC_STM32F765XX
