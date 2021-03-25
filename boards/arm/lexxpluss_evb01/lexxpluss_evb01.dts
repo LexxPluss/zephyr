@@ -37,6 +37,9 @@
 
 	aliases {
 		led0 = &user_led_0;
+		led1 = &user_led_1;
+		led2 = &user_led_2;
+		led3 = &user_led_3;
 	};
 };
 
