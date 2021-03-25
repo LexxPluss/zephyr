@@ -4,6 +4,6 @@ config SOC
 	default "stm32f765xx"
 
 config NUM_IRQS
-	default 98
+	default 110
 
 endif # SOC_STM32F765XX
