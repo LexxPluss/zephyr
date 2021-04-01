@@ -7,8 +7,10 @@
 template <class T>
 struct thread_runner {
     static void runner(void *p1, void *p2, void *p3) {
-        T *target = static_cast<T*>(p1);
-        if (target->init() == 0)
-            target->run();
+        if (p1 != nullptr) {
+            T *target = static_cast<T*>(p1);
+            if (target->init() == 0)
+                target->run();
+        }
     }
 };
