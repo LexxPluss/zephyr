@@ -63,3 +63,8 @@
 	phase-seg2 = <5>;
 	status = "okay";
 };
+
+&spi4 {
+	pinctrl-0 = <&spi4_mosi_pe6>;
+	status = "okay";
+};
