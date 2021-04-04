@@ -14,4 +14,4 @@ public:
 private:
 };
 
-LEXX_THREAD(led_controller);
+LEXX_THREAD_RUNNER(led_controller);

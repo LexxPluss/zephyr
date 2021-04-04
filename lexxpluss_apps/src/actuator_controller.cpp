@@ -29,4 +29,4 @@ private:
     const device *dev = nullptr;
 };
 
-LEXX_THREAD(actuator_controller);
+LEXX_THREAD_RUNNER(actuator_controller);

@@ -29,4 +29,4 @@ private:
     const device *dev = nullptr;
 };
 
-LEXX_THREAD(sonar_controller);
+LEXX_THREAD_RUNNER(sonar_controller);

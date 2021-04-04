@@ -1,6 +1,6 @@
 #pragma once
 
-#define LEXX_THREAD(name) \
+#define LEXX_THREAD_RUNNER(name) \
     static name instance; \
     K_THREAD_DEFINE(tid_##name, 2048, &thread_runner<name>::runner, &instance, nullptr, nullptr, 5, 0, 0)
 

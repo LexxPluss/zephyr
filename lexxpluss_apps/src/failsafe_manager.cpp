@@ -13,4 +13,4 @@ public:
     }
 };
 
-LEXX_THREAD(failsafe_manager);
+LEXX_THREAD_RUNNER(failsafe_manager);

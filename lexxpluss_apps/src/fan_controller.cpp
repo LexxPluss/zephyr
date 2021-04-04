@@ -29,4 +29,4 @@ private:
     const device *dev = nullptr;
 };
 
-LEXX_THREAD(fan_controller);
+LEXX_THREAD_RUNNER(fan_controller);

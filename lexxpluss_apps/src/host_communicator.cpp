@@ -13,4 +13,4 @@ public:
     }
 };
 
-LEXX_THREAD(host_communicator);
+LEXX_THREAD_RUNNER(host_communicator);

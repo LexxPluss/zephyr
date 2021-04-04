@@ -12,4 +12,4 @@ public:
     }
 };
 
-LEXX_THREAD(commander);
+LEXX_THREAD_RUNNER(commander);
