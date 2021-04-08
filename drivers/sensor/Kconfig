@@ -88,6 +88,8 @@ source "drivers/sensor/grove/Kconfig"
 
 source "drivers/sensor/ti_hdc/Kconfig"
 
+source "drivers/sensor/hc_sr04/Kconfig"
+
 source "drivers/sensor/hmc5883l/Kconfig"
 
 source "drivers/sensor/hp206c/Kconfig"
