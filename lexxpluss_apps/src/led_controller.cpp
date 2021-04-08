@@ -1,7 +1,10 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/led_strip.h>
+#include <logging/log.h>
 #include "thread_runner.hpp"
+
+LOG_MODULE_REGISTER(led_controller, LOG_LEVEL_INF);
 
 #define LED    DT_ALIAS(led_strip)
 #define LABEL  DT_LABEL(LED)
@@ -14,6 +17,7 @@ public:
         colors[1] = {.r = 0x00, .g = 0xff, .b = 0x00};
         colors[2] = {.r = 0x00, .g = 0x00, .b = 0xff};
         dev = device_get_binding(LABEL);
+        LOG_INF("LED strip for LexxPluss board.");
         return dev == nullptr ? -1 : 0;
     }
 #if 0
