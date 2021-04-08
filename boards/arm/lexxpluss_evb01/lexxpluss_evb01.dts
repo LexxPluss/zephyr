@@ -40,6 +40,7 @@
 		led1 = &user_led_1;
 		led2 = &user_led_2;
 		led3 = &user_led_3;
+		led-strip = &led_strip;
 	};
 };
 
@@ -65,6 +66,16 @@
 };
 
 &spi4 {
-	pinctrl-0 = <&spi4_mosi_pe6>;
+	pinctrl-0 = <&spi4_nss_pe4 &spi4_sck_pe2 &spi4_miso_pe13 &spi4_mosi_pe6>;
 	status = "okay";
+	led_strip: ws2812@0 {
+		compatible = "worldsemi,ws2812-spi";
+		label = "WS2812";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		chain-length = <8>;
+		spi-one-frame = <0x7c>;
+		spi-zero-frame = <0x60>;
+	};
+
 };
