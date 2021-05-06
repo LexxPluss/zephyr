@@ -156,24 +156,17 @@ const led_rgb led_driver::black           = {.r = 0x00, .g = 0x00, .b = 0x00};
 class led_controller {
 public:
     int setup() {
-        prev = k_uptime_get();
         k_msgq_init(&led_controller_msgq, led_controller_msgq_buffer, sizeof (led_message), 10);
         return driver.init();
     }
     void loop() {
-        if (k_msgq_get(&led_controller_msgq, &message, K_NO_WAIT) == 0)
+        if (k_msgq_get(&led_controller_msgq, &message, K_MSEC(25)) == 0)
             driver.reset();
-        auto now = k_uptime_get();
-        if (now - prev >= 25) {
-            prev = now;
-            driver.poll(message.pattern);
-        }
-        k_msleep(1);
+        driver.poll(message.pattern);
     }
 private:
     led_driver driver;
     led_message message{led_message::NONE};
-    int64_t prev = 0;
 };
 
 LEXX_THREAD_RUNNER(led_controller);
