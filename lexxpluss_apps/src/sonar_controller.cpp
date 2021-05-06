@@ -52,7 +52,7 @@ public:
         driver.poll(message.distance);
         while (k_msgq_put(&sonar_controller_msgq, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&sonar_controller_msgq);
-        k_sleep(K_MSEC(50));
+        k_msleep(1);
     }
 private:
     sonar_driver driver;
