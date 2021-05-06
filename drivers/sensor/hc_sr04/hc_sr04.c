@@ -199,7 +199,7 @@ static int hc_sr04_sample_fetch(const struct device *dev, enum sensor_channel ch
         p_data->sensor_value.val2 = (count % 1000000);
         p_data->sensor_value.val1 = (count / 1000000);
     } else {
-        LOG_INF("Invalid measurement");
+        LOG_INF("Invalid measurement %u", count);
         p_data->sensor_value.val1 = 0;
         p_data->sensor_value.val2 = 0;
         k_usleep(T_SPURIOS_WAIT_US);
