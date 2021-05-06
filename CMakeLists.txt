@@ -35,6 +35,7 @@ endif()
 # For Zephyr more specifically this breaks (at least)
 #     -fmacro-prefix-map=${ZEPHYR_BASE}=
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Verify that the toolchain can compile a dummy file, if it is not we
 # won't be able to test for compatibility with certain C flags.

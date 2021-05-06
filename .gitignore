@@ -51,3 +51,6 @@ TAGS
 tags
 
 .idea
+
+/compile_commands.json
+/lexxpluss_apps/ros_lib/

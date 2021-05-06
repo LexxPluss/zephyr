@@ -71,12 +71,17 @@
 		led1 = &user_led_1;
 		led2 = &user_led_2;
 		led3 = &user_led_3;
-		led-strip = &led_strip;
 	};
 };
 
 &usart3 {
 	pinctrl-0 = <&usart3_tx_pd8 &usart3_rx_pd9>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&uart7 {
+	pinctrl-0 = <&uart7_rx_pe7 &uart7_tx_pe8 &uart7_rts_pf8 &uart7_cts_pf9>;
 	current-speed = <115200>;
 	status = "okay";
 };
@@ -99,9 +104,24 @@
 &spi4 {
 	pinctrl-0 = <&spi4_nss_pe4 &spi4_sck_pe2 &spi4_miso_pe13 &spi4_mosi_pe6>;
 	status = "okay";
-	led_strip: ws2812@0 {
+	led_strip0: ws2812@0 {
 		compatible = "worldsemi,ws2812-spi";
-		label = "WS2812";
+		label = "WS2812_0";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		chain-length = <8>;
+		spi-one-frame = <0x7c>;
+		spi-zero-frame = <0x60>;
+	};
+
+};
+
+&spi5 {
+	pinctrl-0 = <&spi5_nss_ph5 &spi5_sck_pf7 &spi5_miso_ph7 &spi5_mosi_pf11>;
+	status = "okay";
+	led_strip1: ws2812@1 {
+		compatible = "worldsemi,ws2812-spi";
+		label = "WS2812_1";
 		reg = <0>;
 		spi-max-frequency = <8000000>;
 		chain-length = <8>;
