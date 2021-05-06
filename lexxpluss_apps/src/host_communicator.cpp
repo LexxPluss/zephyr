@@ -53,7 +53,7 @@ public:
             ros_msg.sensor1 = message.distance[1];
             ros_msg.sensor2 = message.distance[2];
             ros_msg.sensor3 = message.distance[3];
-            nh.publish(pub.id_, &ros_msg); // workaround, can not call publisher virtual funcion.
+            pub.publish(&ros_msg);
             printk("distance: %d %d %d %d\n",
                    message.distance[0],
                    message.distance[1],
