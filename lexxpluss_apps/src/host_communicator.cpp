@@ -1,4 +1,5 @@
 #include <zephyr.h>
+#include <logging/log.h>
 #include "ros.h"
 #include "lexxauto_msgs/Led.h"
 #include "lexxauto_msgs/ultrasound.h"
@@ -7,9 +8,13 @@
 
 namespace {
 
+LOG_MODULE_REGISTER(led_controller, LOG_LEVEL_INF);
+
+class ros_led_server;
 class ros_led_server {
 public:
     void callback(const lexxauto_msgs::LedRequest &req, lexxauto_msgs::LedResponse &res) {
+        LOG_INF("LED request. (%s)", req.pattern);
         if      (strcmp(req.pattern, "emergency_stop")  == 0) message.pattern = led_message::EMERGENCY_STOP;
         else if (strcmp(req.pattern, "amr_mode")        == 0) message.pattern = led_message::AMR_MODE;
         else if (strcmp(req.pattern, "agv_mode")        == 0) message.pattern = led_message::AGV_MODE;
@@ -32,14 +37,16 @@ public:
             updated = false;
         }
     }
+    ros::ServiceServer<lexxauto_msgs::LedRequest, lexxauto_msgs::LedResponse, ros_led_server>
+        server{"/body_control/led", &ros_led_server::callback, this};
 private:
     led_message message = {led_message::NONE};
     bool updated = false;
-} ros_led_server_instance;
+};
 
-class {
+class ros_sonar_server {
 public:
-    void poll(ros::NodeHandle &nh, ros::Publisher &pub) {
+    void poll(ros::NodeHandle &nh) {
         sonar_message message;
         if (k_msgq_get(&sonar_controller_msgq, &message, K_NO_WAIT) == 0) {
             ros_msg.sensor0 = message.distance[0];
@@ -54,20 +61,18 @@ public:
                    message.distance[3]);
         }
     }
+    ros::Publisher pub{"ultrasound_measured_data", &ros_msg};
+private:
     lexxauto_msgs::ultrasound ros_msg;
-} ros_sonar_server_instance;
+};
 
-ros::NodeHandle nh;
-ros::ServiceServer<lexxauto_msgs::LedRequest, lexxauto_msgs::LedResponse, ros_led_server>
-    led("/body_control/led", &ros_led_server::callback, &ros_led_server_instance);
-ros::Publisher sonar_pub("ultrasound_measured_data", &ros_sonar_server_instance.ros_msg);
-
+#if 1
 class debug_scenario {
 public:
     void init() {
         prev = k_uptime_get();
     }
-    void poll() {
+    void poll(ros_led_server &led) {
         static const char *patterns[] = {
             "emergency_stop",
             "amr_mode",
@@ -87,7 +92,7 @@ public:
             lexxauto_msgs::LedRequest req;
             lexxauto_msgs::LedResponse res;
             req.pattern = patterns[index];
-            ros_led_server_instance.callback(req, res);
+            led.callback(req, res);
             if (++index >= sizeof patterns / sizeof patterns[0])
                 index = 0;
         }
@@ -95,24 +100,30 @@ public:
 private:
     int64_t prev = 0;
     uint32_t index = 0;
-} debug_scenario_instance;
+};
+#endif
 
 class host_communicator {
 public:
-    int setup() const {
+    int setup() {
         nh.initNode();
-        nh.advertiseService(led);
-        nh.advertise(sonar_pub);
-        debug_scenario_instance.init();
+        nh.advertiseService(led.server);
+        nh.advertise(sonar.pub);
+        debug.init();
         return 0;
     }
-    void loop() const {
+    void loop() {
         nh.spinOnce();
-        ros_led_server_instance.poll();
-        ros_sonar_server_instance.poll(nh, sonar_pub);
-        debug_scenario_instance.poll();
+        led.poll();
+        sonar.poll(nh);
+        debug.poll(led);
         k_msleep(1);
     }
+private:
+    ros::NodeHandle nh;
+    ros_led_server led;
+    ros_sonar_server sonar;
+    debug_scenario debug;
 };
 
 LEXX_THREAD_RUNNER(host_communicator);
