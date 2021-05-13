@@ -130,6 +130,4 @@ LEXX_THREAD_RUNNER(host_communicator);
 
 }
 
-/*
-vi:et:sw=4:
-*/
+/* vim: set expandtab shiftwidth=4: */

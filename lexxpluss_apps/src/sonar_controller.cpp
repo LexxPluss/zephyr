@@ -63,6 +63,4 @@ LEXX_THREAD_RUNNER(sonar_controller);
 
 }
 
-/*
-vi:et:sw=4:
-*/
+/* vim: set expandtab shiftwidth=4: */

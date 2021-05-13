@@ -26,6 +26,4 @@ void main()
     }
 }
 
-/*
-vi:et:sw=4:
-*/
+/* vim: set expandtab shiftwidth=4: */

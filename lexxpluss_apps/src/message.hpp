@@ -28,6 +28,4 @@ struct sonar_message {
 extern k_msgq led_controller_msgq;
 extern k_msgq sonar_controller_msgq;
 
-/*
-vi:et:sw=4:
-*/
+/* vim: set expandtab shiftwidth=4: */

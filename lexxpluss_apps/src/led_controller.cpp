@@ -173,6 +173,4 @@ LEXX_THREAD_RUNNER(led_controller);
 
 }
 
-/*
-vi:et:sw=4:
-*/
+/* vim: set expandtab shiftwidth=4: */
