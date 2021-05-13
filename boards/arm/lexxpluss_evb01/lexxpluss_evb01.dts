@@ -130,3 +130,19 @@
 	};
 
 };
+
+&timers10 {
+	status = "okay";
+	pwm {
+		pinctrl-0 = <&tim10_ch1_pb8>;
+		status = "okay";
+	};
+};
+
+&timers11 {
+	status = "okay";
+	pwm {
+		pinctrl-0 = <&tim11_ch1_pb9>;
+		status = "okay";
+	};
+};
