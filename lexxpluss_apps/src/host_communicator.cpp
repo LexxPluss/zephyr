@@ -54,11 +54,6 @@ public:
             ros_msg.sensor2 = message.distance[2];
             ros_msg.sensor3 = message.distance[3];
             pub.publish(&ros_msg);
-            printk("distance: %d %d %d %d\n",
-                   message.distance[0],
-                   message.distance[1],
-                   message.distance[2],
-                   message.distance[3]);
         }
     }
     ros::Publisher pub{"ultrasound_measured_data", &ros_msg};
