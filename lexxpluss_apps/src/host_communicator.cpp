@@ -14,7 +14,6 @@ class ros_led_server;
 class ros_led_server {
 public:
     void callback(const lexxauto_msgs::LedRequest &req, lexxauto_msgs::LedResponse &res) {
-        LOG_INF("LED request. (%s)", req.pattern);
         if      (strcmp(req.pattern, "emergency_stop")  == 0) message.pattern = led_message::EMERGENCY_STOP;
         else if (strcmp(req.pattern, "amr_mode")        == 0) message.pattern = led_message::AMR_MODE;
         else if (strcmp(req.pattern, "agv_mode")        == 0) message.pattern = led_message::AGV_MODE;
@@ -26,6 +25,9 @@ public:
         else if (strcmp(req.pattern, "dock_mode")       == 0) message.pattern = led_message::DOCK_MODE;
         else if (strcmp(req.pattern, "charging")        == 0) message.pattern = led_message::CHARGING;
         else if (strcmp(req.pattern, "waiting_for_job") == 0) message.pattern = led_message::WAITING_FOR_JOB;
+        else if (strcmp(req.pattern, "left_winker")     == 0) message.pattern = led_message::LEFT_WINKER;
+        else if (strcmp(req.pattern, "right_winker")    == 0) message.pattern = led_message::RIGHT_WINKER;
+        else if (strcmp(req.pattern, "both_winker")     == 0) message.pattern = led_message::BOTH_WINKER;
         else                                                  message.pattern = led_message::NONE;
         updated = true;
         res.success = true;
