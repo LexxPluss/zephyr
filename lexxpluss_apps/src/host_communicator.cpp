@@ -66,7 +66,7 @@ private:
     lexxauto_msgs::ultrasound ros_msg;
 };
 
-#if 1
+#if 0
 class debug_scenario {
 public:
     void init() {
@@ -109,21 +109,21 @@ public:
         nh.initNode();
         nh.advertiseService(led.server);
         nh.advertise(sonar.pub);
-        debug.init();
+        // debug.init();
         return 0;
     }
     void loop() {
         nh.spinOnce();
         led.poll();
         sonar.poll(nh);
-        debug.poll(led);
+        // debug.poll(led);
         k_msleep(1);
     }
 private:
     ros::NodeHandle nh;
     ros_led_server led;
     ros_sonar_server sonar;
-    debug_scenario debug;
+    // debug_scenario debug;
 };
 
 LEXX_THREAD_RUNNER(host_communicator);
