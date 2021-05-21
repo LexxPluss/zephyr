@@ -27,8 +27,8 @@ LOG_MODULE_REGISTER(hc_sr04, CONFIG_HC_SR04_LOG_LEVEL);
 /* Timings defined by spec */
 #define T_TRIG_PULSE_US       11
 #define T_INVALID_PULSE_US    25000
-#define T_MAX_WAIT_MS         130
-#define T_SPURIOS_WAIT_US     145
+#define T_MAX_WAIT_MS         40
+// #define T_SPURIOS_WAIT_US     145
 #define METERS_PER_SEC        340
 
 enum hc_sr04_state {
@@ -40,20 +40,17 @@ enum hc_sr04_state {
     HC_SR04_STATE_COUNT
 };
 
-static struct hc_sr04_shared_resources {
-    struct k_sem         fetch_sem;
-    struct k_mutex       mutex;
-    bool                 ready; /* The module has been initialized */
-    enum hc_sr04_state   state;
-    uint32_t             start_time;
-    uint32_t             end_time;
-} m_shared_resources;
-
 struct hc_sr04_data {
     struct sensor_value   sensor_value;
     const struct device  *trig_dev;
     const struct device  *echo_dev;
     struct gpio_callback  echo_cb_data;
+    struct k_sem          fetch_sem;
+    struct k_mutex        mutex;
+    bool                  ready; /* The module has been initialized */
+    enum hc_sr04_state    state;
+    uint32_t              start_time;
+    uint32_t              end_time;
 };
 
 struct hc_sr04_cfg {
@@ -67,20 +64,22 @@ struct hc_sr04_cfg {
 
 static void input_changed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    switch (m_shared_resources.state) {
+    struct hc_sr04_data *p_data = dev->data;
+
+    switch (p_data->state) {
     case HC_SR04_STATE_RISING_EDGE:
-        m_shared_resources.start_time = k_cycle_get_32();
-        m_shared_resources.state = HC_SR04_STATE_FALLING_EDGE;
+        p_data->start_time = k_cycle_get_32();
+        p_data->state = HC_SR04_STATE_FALLING_EDGE;
         break;
     case HC_SR04_STATE_FALLING_EDGE:
-        m_shared_resources.end_time = k_cycle_get_32();
+        p_data->end_time = k_cycle_get_32();
         (void) gpio_remove_callback(dev, cb);
-        m_shared_resources.state = HC_SR04_STATE_FINISHED;
-        k_sem_give(&m_shared_resources.fetch_sem);
+        p_data->state = HC_SR04_STATE_FINISHED;
+        k_sem_give(&p_data->fetch_sem);
         break;
     default:
         (void) gpio_remove_callback(dev, cb);
-        m_shared_resources.state = HC_SR04_STATE_ERROR;
+        p_data->state = HC_SR04_STATE_ERROR;
         break;
     }
 }
@@ -92,6 +91,7 @@ static int hc_sr04_init(const struct device *dev)
     struct hc_sr04_data      *p_data = dev->data;
     const struct hc_sr04_cfg *p_cfg  = dev->config;
 
+    p_data->ready = false;
     p_data->sensor_value.val1 = 0;
     p_data->sensor_value.val2 = 0;
 
@@ -119,22 +119,17 @@ static int hc_sr04_init(const struct device *dev)
     }
     gpio_init_callback(&p_data->echo_cb_data, input_changed, BIT(p_cfg->echo_pin));
 
-    if (m_shared_resources.ready) {
-        /* Already initialized */
-        return 0;
-    }
-
-    err = k_sem_init(&m_shared_resources.fetch_sem, 0, 1);
+    err = k_sem_init(&p_data->fetch_sem, 0, 1);
     if (0 != err) {
         return err;
     }
-    err = k_mutex_init(&m_shared_resources.mutex);
+    err = k_mutex_init(&p_data->mutex);
     if (0 != err) {
         return err;
     }
 
-    m_shared_resources.state = HC_SR04_STATE_IDLE;
-    m_shared_resources.ready = true;
+    p_data->state = HC_SR04_STATE_IDLE;
+    p_data->ready = true;
     LOG_INF("SR-04 started.");
     return 0;
 }
@@ -151,12 +146,12 @@ static int hc_sr04_sample_fetch(const struct device *dev, enum sensor_channel ch
         return -ENOTSUP;
     }
 
-    if (unlikely(!m_shared_resources.ready)) {
+    if (unlikely(!p_data->ready)) {
         LOG_ERR("Driver is not initialized yet");
         return -EBUSY;
     }
 
-    err = k_mutex_lock(&m_shared_resources.mutex, K_FOREVER);
+    err = k_mutex_lock(&p_data->mutex, K_FOREVER);
     if (0 != err) {
         return err;
     }
@@ -164,18 +159,20 @@ static int hc_sr04_sample_fetch(const struct device *dev, enum sensor_channel ch
     err = gpio_add_callback(p_data->echo_dev, &p_data->echo_cb_data);
     if (0 != err) {
         LOG_DBG("Failed to add HC-SR04 echo callback");
-        (void) k_mutex_unlock(&m_shared_resources.mutex);
+        (void) k_mutex_unlock(&p_data->mutex);
         return -EIO;
     }
 
-    m_shared_resources.state = HC_SR04_STATE_RISING_EDGE;
+    p_data->state = HC_SR04_STATE_RISING_EDGE;
+    p_data->start_time = 0;
+    p_data->end_time = 0;
     gpio_pin_set(p_data->trig_dev, p_cfg->trig_pin, 1);
     k_busy_wait(T_TRIG_PULSE_US);
     gpio_pin_set(p_data->trig_dev, p_cfg->trig_pin, 0);
 
-    if (0 != k_sem_take(&m_shared_resources.fetch_sem, K_MSEC(T_MAX_WAIT_MS))) {
-        LOG_DBG("No response from HC-SR04");
-        (void) k_mutex_unlock(&m_shared_resources.mutex);
+    if (0 != k_sem_take(&p_data->fetch_sem, K_MSEC(T_MAX_WAIT_MS))) {
+        LOG_INF("No response from HC-SR04");
+        (void) k_mutex_unlock(&p_data->mutex);
         err = gpio_remove_callback(p_data->echo_dev, &p_data->echo_cb_data);
         if (0 != err) {
             return err;
@@ -183,13 +180,13 @@ static int hc_sr04_sample_fetch(const struct device *dev, enum sensor_channel ch
         return -EIO;
     }
 
-    __ASSERT_NO_MSG(HC_SR04_STATE_FINISHED == m_shared_resources.state);
+    __ASSERT_NO_MSG(HC_SR04_STATE_FINISHED == p_data->state);
 
-    if (m_shared_resources.start_time <= m_shared_resources.end_time) {
-        count = (m_shared_resources.end_time - m_shared_resources.start_time);
+    if (p_data->start_time <= p_data->end_time) {
+        count = (p_data->end_time - p_data->start_time);
     } else {
-        count =  (0xFFFFFFFF - m_shared_resources.start_time);
-        count += m_shared_resources.end_time;
+        count =  (0xFFFFFFFF - p_data->start_time);
+        count += p_data->end_time;
     }
     /* Convert from ticks to nanoseconds and then to microseconds */
     count = k_cyc_to_us_near32(count);
@@ -202,10 +199,10 @@ static int hc_sr04_sample_fetch(const struct device *dev, enum sensor_channel ch
         LOG_INF("Invalid measurement %u", count);
         p_data->sensor_value.val1 = 0;
         p_data->sensor_value.val2 = 0;
-        k_usleep(T_SPURIOS_WAIT_US);
+        // k_usleep(T_SPURIOS_WAIT_US);
     }
 
-    err = k_mutex_unlock(&m_shared_resources.mutex);
+    err = k_mutex_unlock(&p_data->mutex);
     if (0 != err) {
         return err;
     }
@@ -218,7 +215,7 @@ static int hc_sr04_channel_get(const struct device *dev,
 {
     const struct hc_sr04_data *p_data = dev->data;
 
-    if (unlikely(!m_shared_resources.ready)) {
+    if (unlikely(!p_data->ready)) {
         LOG_WRN("Device is not initialized yet");
         return -EBUSY;
     }

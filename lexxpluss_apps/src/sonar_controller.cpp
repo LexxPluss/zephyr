@@ -14,31 +14,63 @@ LOG_MODULE_REGISTER(sonar_controller, LOG_LEVEL_INF);
 
 char __aligned(4) sonar_controller_msgq_buffer[10 * sizeof (sonar_message)];
 
+class locker {
+public:
+    locker(k_mutex &mutex) : mutex(mutex) {k_mutex_lock(&mutex, K_FOREVER);}
+    ~locker() {k_mutex_unlock(&mutex);}
+private:
+    k_mutex &mutex;
+};
+
 class sonar_driver {
 public:
-    int init() {
-        for (int i = 0; i < sonar_message::SENSORS; ++i) {
-            char label[16];
-            snprintf(label, sizeof label, "HC-SR04_%d", i);
-            dev[i] = device_get_binding(label);
-            if (dev[i] == nullptr)
-                return -1;
-            LOG_INF("SONAR controller for LexxPluss board. (%p)", dev[i]);
-        }
-        return 0;
+    static void runner(void *p1, void *p2, void *p3) {
+        sonar_driver *self = static_cast<sonar_driver*>(p1);
+        if (self->init(static_cast<const char*>(p2)) == 0)
+            self->run();
     }
-    void poll(uint32_t distance[sonar_message::SENSORS]) {
-        for (int i = 0; i < sonar_message::SENSORS; ++i) {
-            if (sensor_sample_fetch_chan(dev[i], SENSOR_CHAN_ALL) == 0) {
-                sensor_value v;
-                sensor_channel_get(dev[i], SENSOR_CHAN_DISTANCE, &v);
-                distance[i] = v.val1 * 1000 + v.val2 / 1000;
-            }
-        }
+    bool is_updated() {
+        locker l(mutex);
+        return updated;
+    }
+    uint32_t get_distance() {
+        locker l(mutex);
+        updated = false;
+        return distance;
     }
 private:
-    const device *dev[sonar_message::SENSORS] = {nullptr, nullptr, nullptr, nullptr};
-};
+    int init(const char *label) {
+        k_mutex_init(&mutex);
+        dev = device_get_binding(label);
+        LOG_INF("SONAR controller for LexxPluss board. (%p)", dev);
+        return dev == nullptr ? -1 : 0;
+    }
+    void run() {
+        uint32_t start = k_uptime_get_32();
+        if (sensor_sample_fetch_chan(dev, SENSOR_CHAN_ALL) == 0) {
+            sensor_value v;
+            sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &v);
+            locker l(mutex);
+            distance = v.val1 * 1000 + v.val2 / 1000;
+            updated = true;
+        }
+        uint32_t now = k_uptime_get_32();
+        uint32_t elapsed = now - start;
+        uint32_t waitms = 1;
+        if (elapsed < 60)
+            waitms = 60 - elapsed;
+        k_msleep(waitms);
+    }
+    k_mutex mutex;
+    const device *dev = nullptr;
+    uint32_t distance = 0;
+    bool updated = false;
+} drivers[sonar_message::SENSORS];
+
+K_THREAD_DEFINE(tid_driver_0, 2048, &sonar_driver::runner, &drivers[0], "HC-SR04_0", nullptr, 5, K_FP_REGS, 1000);
+K_THREAD_DEFINE(tid_driver_1, 2048, &sonar_driver::runner, &drivers[1], "HC-SR04_1", nullptr, 5, K_FP_REGS, 1000);
+K_THREAD_DEFINE(tid_driver_2, 2048, &sonar_driver::runner, &drivers[2], "HC-SR04_2", nullptr, 5, K_FP_REGS, 1000);
+K_THREAD_DEFINE(tid_driver_3, 2048, &sonar_driver::runner, &drivers[3], "HC-SR04_3", nullptr, 5, K_FP_REGS, 1000);
 
 class sonar_controller {
 public:
@@ -46,16 +78,26 @@ public:
         for (int i = 0; i < sonar_message::SENSORS; ++i)
             message.distance[i] = 0;
         k_msgq_init(&sonar_controller_msgq, sonar_controller_msgq_buffer, sizeof (sonar_message), 10);
-        return driver.init();
+        return 0;
     }
     void loop() {
-        driver.poll(message.distance);
+        while (true) {
+            bool updated = true;
+            for (int i = 0; i < sonar_message::SENSORS; ++i) {
+                if (drivers[i].is_updated())
+                    message.distance[i] = drivers[i].get_distance();
+                else
+                    updated = false;
+            }
+            if (updated)
+                break;
+            k_msleep(1);
+        }
         while (k_msgq_put(&sonar_controller_msgq, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&sonar_controller_msgq);
         k_msleep(1);
     }
 private:
-    sonar_driver driver;
     sonar_message message;
 };
 
