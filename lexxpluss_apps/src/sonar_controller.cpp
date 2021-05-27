@@ -29,13 +29,13 @@ public:
         if (self->init(static_cast<const char*>(p2)) == 0)
             self->run();
     }
-    bool is_updated() {
+    bool is_sampled() {
         locker l(mutex);
-        return updated;
+        return sampled;
     }
     uint32_t get_distance() {
         locker l(mutex);
-        updated = false;
+        sampled = false;
         return distance;
     }
 private:
@@ -46,25 +46,30 @@ private:
         return dev == nullptr ? -1 : 0;
     }
     void run() {
-        uint32_t start = k_uptime_get_32();
-        if (sensor_sample_fetch_chan(dev, SENSOR_CHAN_ALL) == 0) {
-            sensor_value v;
-            sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &v);
-            locker l(mutex);
-            distance = v.val1 * 1000 + v.val2 / 1000;
-            updated = true;
+        while (true) {
+            uint32_t start = k_uptime_get_32();
+            if (sensor_sample_fetch_chan(dev, SENSOR_CHAN_ALL) == 0) {
+                sensor_value v;
+                sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &v);
+                locker l(mutex);
+                distance = v.val1 * 1000 + v.val2 / 1000;
+            }
+            {
+                locker l(mutex);
+                sampled = true;
+            }
+            uint32_t now = k_uptime_get_32();
+            uint32_t elapsed = now - start;
+            uint32_t waitms = 1;
+            if (elapsed < 60)
+                waitms = 60 - elapsed;
+            k_msleep(waitms);
         }
-        uint32_t now = k_uptime_get_32();
-        uint32_t elapsed = now - start;
-        uint32_t waitms = 1;
-        if (elapsed < 60)
-            waitms = 60 - elapsed;
-        k_msleep(waitms);
     }
     k_mutex mutex;
     const device *dev = nullptr;
     uint32_t distance = 0;
-    bool updated = false;
+    bool sampled = false;
 } drivers[sonar_message::SENSORS];
 
 K_THREAD_DEFINE(tid_driver_0, 2048, &sonar_driver::runner, &drivers[0], "HC-SR04_0", nullptr, 5, K_FP_REGS, 1000);
@@ -82,17 +87,19 @@ public:
     }
     void loop() {
         while (true) {
-            bool updated = true;
+            bool sampled = true;
             for (int i = 0; i < sonar_message::SENSORS; ++i) {
-                if (drivers[i].is_updated())
-                    message.distance[i] = drivers[i].get_distance();
-                else
-                    updated = false;
+                if (!drivers[i].is_sampled()) {
+                    sampled = false;
+                    break;
+                }
             }
-            if (updated)
+            if (sampled)
                 break;
             k_msleep(1);
         }
+        for (int i = 0; i < sonar_message::SENSORS; ++i)
+            message.distance[i] = drivers[i].get_distance() / 10;
         while (k_msgq_put(&sonar_controller_msgq, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&sonar_controller_msgq);
         k_msleep(1);
