@@ -56,10 +56,7 @@ public:
     void set_rootpath(const char* rootpath) {
         snprintf(this->rootpath, sizeof this->rootpath, "%s", rootpath);
         snprintf(workpath, sizeof workpath, "%s/log", rootpath);
-        fs_dir_t dir;
-        fs_dir_t_init(&dir);
-        if (fs_opendir(&dir, workpath) == 0) {
-            fs_closedir(&dir);
+        if (fs_stat(workpath, &dirent) == 0) {
             LOG_INF("already has log directory. (%s)", log_strdup(workpath));
         } else {
             fs_mkdir(workpath);
