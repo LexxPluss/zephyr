@@ -2,12 +2,15 @@
 #include <disk/disk_access.h>
 #include <fs/fs.h>
 #include <ff.h>
+#include <logging/log.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "thread_runner.hpp"
 
 namespace {
+
+LOG_MODULE_REGISTER(logger, LOG_LEVEL_INF);
 
 class sorted_string_array {
 public:
@@ -53,12 +56,21 @@ public:
     void set_rootpath(const char* rootpath) {
         snprintf(this->rootpath, sizeof this->rootpath, "%s", rootpath);
         snprintf(workpath, sizeof workpath, "%s/log", rootpath);
-        fs_mkdir(workpath);
+        fs_dir_t dir;
+        fs_dir_t_init(&dir);
+        if (fs_opendir(&dir, workpath) == 0) {
+            fs_closedir(&dir);
+            LOG_INF("already has log directory. (%s)", log_strdup(workpath));
+        } else {
+            fs_mkdir(workpath);
+            LOG_INF("make log directory. (%s)", log_strdup(workpath));
+        }
         logpath[0] = 0;
     }
     void maintain() {
-        uint32_t freebytes = get_freebytes(rootpath);
-        if (freebytes > 0 && freebytes < MIN_FREE_BYTES) {
+        int32_t freeMB = get_freeMB(rootpath);
+        LOG_INF("SD CARD free %dMB", freeMB);
+        if (freeMB > 0 && freeMB < MIN_FREE_MB) {
             entries.reset(sorted_string_array::ORDER::ASCENT);
             fs_dir_t dir;
             fs_dir_t_init(&dir);
@@ -73,7 +85,7 @@ public:
             for (uint32_t i = 0; i < entries.SIZE; ++i) {
                 if (entries.array[i][0] != 0) {
                     fs_unlink(entries.array[i]);
-                    if (get_freebytes(rootpath) >= MIN_FREE_BYTES)
+                    if (get_freeMB(rootpath) >= MIN_FREE_MB)
                         break;
                 }
             }
@@ -92,7 +104,7 @@ public:
             fs_closedir(&dir);
         }
         if (entries.array[0][0] == 0) {
-            snprintf(logpath, sizeof workpath, "%s/log/log000.log", rootpath);
+            snprintf(logpath, sizeof logpath, "%s/log/log000.log", rootpath);
         } else {
             char num[4]{
                 entries.array[0][3],
@@ -101,8 +113,9 @@ public:
                 0
             };
             int n = atoi(num);
-            snprintf(logpath, sizeof workpath, "%s/log/log%03u.log", rootpath, n + 1);
+            snprintf(logpath, sizeof logpath, "%s/log/log%03u.log", rootpath, n + 1);
         }
+        LOG_INF("new log path %s", log_strdup(logpath));
     }
     void output(const char* message) {
         if (logpath[0] != 0 && message != nullptr && message[0] != 0) {
@@ -115,17 +128,17 @@ public:
         }
     }
 private:
-    int64_t get_freebytes(const char* path) const {
-        int64_t freebytes = -1;
-        struct fs_statvfs statvfs;
+    int32_t get_freeMB(const char* path) const {
+        int32_t freeMB = -1;
+        struct fs_statvfs statvfs{0};
         if (fs_statvfs(path, &statvfs) == 0)
-            freebytes = static_cast<int64_t>(statvfs.f_frsize) * static_cast<int64_t>(statvfs.f_bfree);
-        return freebytes;
+            freeMB = static_cast<int64_t>(statvfs.f_frsize) * static_cast<int64_t>(statvfs.f_bfree) / 1000000LL;
+        return freeMB;
     }
     sorted_string_array entries;
     fs_dirent dirent;
     char rootpath[PATH_MAX], workpath[PATH_MAX], logpath[PATH_MAX];
-    static constexpr uint32_t MIN_FREE_BYTES = 512 * 1024 * 1024;
+    static constexpr int32_t MIN_FREE_MB = 512;
 };
 
 class logger {
@@ -133,11 +146,13 @@ public:
     int setup() {
         if (disk_access_init("SD") != 0)
             return -1;
+        LOG_INF("SD CARD OK");
         mount.type = FS_FATFS;
         mount.fs_data = &fatfs;
         mount.mnt_point = mnt_point;
         if (fs_mount(&mount) != FR_OK)
             return -1;
+        LOG_INF("SD CARD mounted at %s", log_strdup(mnt_point));
         logman.set_rootpath(mnt_point);
         logman.maintain();
         logman.setup_newlog();
