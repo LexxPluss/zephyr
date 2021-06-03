@@ -2,9 +2,11 @@
 
 #include <zephyr.h>
 
-#define LEXX_THREAD_RUNNER(name) \
+#define LEXX_THREAD_RUNNER_DELAYED(name, delay) \
     static name instance; \
-    K_THREAD_DEFINE(tid_##name, 2048, &thread_runner<name>::runner, &instance, nullptr, nullptr, 5, K_FP_REGS, 1000)
+    K_THREAD_DEFINE(tid_##name, 2048, &thread_runner<name>::runner, &instance, nullptr, nullptr, 5, K_FP_REGS, delay)
+
+#define LEXX_THREAD_RUNNER(name) LEXX_THREAD_RUNNER_DELAYED(name, 1000)
 
 template <class T>
 struct thread_runner {
