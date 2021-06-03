@@ -19,6 +19,7 @@ struct led_message {
     static constexpr uint32_t LEFT_WINKER = 12;
     static constexpr uint32_t RIGHT_WINKER = 13;
     static constexpr uint32_t BOTH_WINKER = 14;
+    static constexpr uint32_t MOVE_ACTUATOR = 15;
 } __attribute__((aligned(4)));
 
 struct sonar_message {

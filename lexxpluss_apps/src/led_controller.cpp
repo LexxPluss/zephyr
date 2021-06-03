@@ -31,7 +31,7 @@ public:
         switch (pattern) {
         default:
         case led_message::NONE:            fill(black);                                           break;
-        case led_message::EMERGENCY_STOP:  fill_strobe(emergency_stop, counter);                  break;
+        case led_message::EMERGENCY_STOP:  fill_strobe(emergency_stop, 10, 50, 1000, counter);    break;
         case led_message::AMR_MODE:        fill(amr_mode);                                        break;
         case led_message::AGV_MODE:        fill(agv_mode);                                        break;
         case led_message::MISSION_PAUSE:   fill(mission_pause);                                   break;
@@ -45,11 +45,13 @@ public:
         case led_message::LEFT_WINKER:     fill_blink_sequence(sequence, counter, SELECT::LEFT);  break;
         case led_message::RIGHT_WINKER:    fill_blink_sequence(sequence, counter, SELECT::RIGHT); break;
         case led_message::BOTH_WINKER:     fill_blink_sequence(sequence, counter);                break;
+        case led_message::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200, counter);     break;
         }
         update_led();
         ++counter;
     }
     void reset() {counter = 0;}
+    static constexpr uint32_t DELAY_MS = 25;
 private:
     enum class SELECT : int {LEFT = 0, RIGHT = 1, BOTH = 2};
     void update_led() {
@@ -113,15 +115,13 @@ private:
         if (counter > 25)
             counter = 0;
     }
-    void fill_strobe(const led_rgb &color, uint32_t &counter) {
-        static constexpr uint32_t thres = 20;
-        static constexpr uint32_t pause = 40;
-        if (counter < thres) {
-            if ((counter % 4) == 0)
+    void fill_strobe(const led_rgb &color, uint32_t nstrobe, uint32_t strobedelay, uint32_t endpause, uint32_t &counter) {
+        if (counter < nstrobe * strobedelay / DELAY_MS) {
+            if ((counter % (strobedelay * 2 / DELAY_MS)) == 0)
                 fill(color);
-            else if ((counter % 4) == 2)
+            else if ((counter % (strobedelay * 2 / DELAY_MS)) == strobedelay / DELAY_MS)
                 fill(black);
-        } else if (counter == thres + pause) {
+        } else if (counter == (nstrobe * strobedelay + endpause) / DELAY_MS) {
             fill(black);
             counter = 0;
         }
@@ -181,7 +181,7 @@ private:
     const device *dev[2]{nullptr, nullptr};
     led_rgb pixeldata[2][PIXELS];
     uint32_t counter = 0;
-    static const led_rgb emergency_stop, amr_mode, agv_mode, mission_pause, path_blocked, manual_drive, dock_mode, waiting_for_job, orange, sequence, black;
+    static const led_rgb emergency_stop, amr_mode, agv_mode, mission_pause, path_blocked, manual_drive, dock_mode, waiting_for_job, orange, sequence, move_actuator, black;
 };
 const led_rgb led_driver::emergency_stop  = {.r = 0x80, .g = 0x00, .b = 0x00};
 const led_rgb led_driver::amr_mode        = {.r = 0x00, .g = 0x80, .b = 0x80};
@@ -193,6 +193,7 @@ const led_rgb led_driver::dock_mode       = {.r = 0x00, .g = 0x00, .b = 0xff};
 const led_rgb led_driver::waiting_for_job = {.r = 0xff, .g = 0xff, .b = 0x00};
 const led_rgb led_driver::orange          = {.r = 0xff, .g = 0xa5, .b = 0x00};
 const led_rgb led_driver::sequence        = {.r = 0x90, .g = 0x20, .b = 0x00};
+const led_rgb led_driver::move_actuator   = {.r = 0x45, .g = 0xff, .b = 0x00};
 const led_rgb led_driver::black           = {.r = 0x00, .g = 0x00, .b = 0x00};
 
 class led_controller {
@@ -202,7 +203,7 @@ public:
         return driver.init();
     }
     void loop() {
-        if (k_msgq_get(&led_controller_msgq, &message, K_MSEC(25)) == 0)
+        if (k_msgq_get(&led_controller_msgq, &message, K_MSEC(led_driver::DELAY_MS)) == 0)
             driver.reset();
         driver.poll(message.pattern);
     }
