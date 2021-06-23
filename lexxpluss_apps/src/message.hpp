@@ -27,12 +27,19 @@ struct sonar_message {
     static constexpr int SENSORS = 4;
 } __attribute__((aligned(4)));
 
+struct imu_message {
+    uint32_t accel[3];
+    uint32_t gyro[3];
+    uint32_t temp;
+} __attribute__((aligned(4)));
+
 struct fan_message {
     uint32_t duty_percent[2];
 } __attribute__((aligned(4)));
 
 extern k_msgq led_controller_msgq;
 extern k_msgq sonar_controller_msgq;
+extern k_msgq imu_controller_msgq;
 extern k_msgq fan_controller_msgq;
 
 /* vim: set expandtab shiftwidth=4: */

@@ -101,6 +101,17 @@
 	status = "okay";
 };
 
+&spi1 {
+	pinctrl-0 = <&spi1_nss_pg10 &spi1_sck_pg11 &spi1_miso_pg9 &spi1_mosi_pd7>;
+	status = "okay";
+	adis16470@0 {
+		compatible = "adi,adis16470";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		label= "ADIS16470";
+	};
+};
+
 &spi4 {
 	pinctrl-0 = <&spi4_nss_pe4 &spi4_sck_pe2 &spi4_miso_pe13 &spi4_mosi_pe6>;
 	status = "okay";

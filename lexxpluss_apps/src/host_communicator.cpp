@@ -65,6 +65,16 @@ private:
     lexxauto_msgs::ultrasound ros_msg;
 };
 
+class ros_imu_server {
+public:
+    void poll(ros::NodeHandle &nh) {
+        imu_message message;
+        if (k_msgq_get(&imu_controller_msgq, &message, K_NO_WAIT) == 0) {
+        }
+    }
+private:
+};
+
 #if 0
 class debug_scenario {
 public:
