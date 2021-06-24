@@ -33,19 +33,19 @@ public:
         if (sensor_sample_fetch_chan(dev, SENSOR_CHAN_ALL) == 0) {
             sensor_value v;
             sensor_channel_get(dev, SENSOR_CHAN_ACCEL_X, &v);
-            message.accel[0] = v.val1 * 1000 + v.val2 / 1000;
+            message.accel[0] = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
             sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Y, &v);
-            message.accel[1] = v.val1 * 1000 + v.val2 / 1000;
+            message.accel[1] = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
             sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Z, &v);
-            message.accel[2] = v.val1 * 1000 + v.val2 / 1000;
+            message.accel[2] = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
             sensor_channel_get(dev, SENSOR_CHAN_GYRO_X, &v);
-            message.gyro[0] = v.val1 * 1000 + v.val2 / 1000;
+            message.gyro[0] = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
             sensor_channel_get(dev, SENSOR_CHAN_GYRO_Y, &v);
-            message.gyro[1] = v.val1 * 1000 + v.val2 / 1000;
+            message.gyro[1] = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
             sensor_channel_get(dev, SENSOR_CHAN_GYRO_Z, &v);
-            message.gyro[2] = v.val1 * 1000 + v.val2 / 1000;
+            message.gyro[2] = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
             sensor_channel_get(dev, SENSOR_CHAN_DIE_TEMP, &v);
-            message.temp = v.val1 * 1000 + v.val2 / 1000;
+            message.temp = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
         }
         while (k_msgq_put(&imu_controller_msgq, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&imu_controller_msgq);

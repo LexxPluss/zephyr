@@ -28,9 +28,9 @@ struct sonar_message {
 } __attribute__((aligned(4)));
 
 struct imu_message {
-    uint32_t accel[3];
-    uint32_t gyro[3];
-    uint32_t temp;
+    float accel[3];
+    float gyro[3];
+    float temp;
 } __attribute__((aligned(4)));
 
 struct fan_message {
