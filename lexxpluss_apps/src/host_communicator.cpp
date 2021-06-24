@@ -8,7 +8,7 @@
 
 namespace {
 
-LOG_MODULE_REGISTER(led_controller, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(host_controller, LOG_LEVEL_INF);
 
 class ros_led_server;
 class ros_led_server {
