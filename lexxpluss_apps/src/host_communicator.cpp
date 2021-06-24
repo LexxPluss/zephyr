@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <logging/log.h>
 #include "ros.h"
+#include "geometry_msgs/Vector3.h"
 #include "lexxauto_msgs/Led.h"
 #include "lexxauto_msgs/ultrasound.h"
 #include "message.hpp"
@@ -70,9 +71,20 @@ public:
     void poll(ros::NodeHandle &nh) {
         imu_message message;
         if (k_msgq_get(&imu_controller_msgq, &message, K_NO_WAIT) == 0) {
+            gyro_msg.x = message.gyro[0];
+            gyro_msg.y = message.gyro[1];
+            gyro_msg.z = message.gyro[2];
+            pub_gyro.publish(&gyro_msg);
+            accel_msg.x = message.accel[0];
+            accel_msg.y = message.accel[1];
+            accel_msg.z = message.accel[2];
+            pub_accel.publish(&accel_msg);
         }
     }
+    ros::Publisher pub_gyro{"adis16470_gyro_data", &gyro_msg};
+    ros::Publisher pub_accel{"adis16470_accel_data", &accel_msg};
 private:
+    geometry_msgs::Vector3 gyro_msg, accel_msg;
 };
 
 #if 0
@@ -116,6 +128,8 @@ class host_communicator {
 public:
     int setup() {
         nh.initNode();
+        nh.advertise(imu.pub_gyro);
+        nh.advertise(imu.pub_accel);
         // nh.advertiseService(led.server);
         // nh.advertise(sonar.pub);
         // debug.init();
@@ -123,6 +137,7 @@ public:
     }
     void loop() {
         nh.spinOnce();
+        imu.poll(nh);
         // led.poll();
         // sonar.poll(nh);
         // debug.poll(led);
@@ -130,6 +145,7 @@ public:
     }
 private:
     ros::NodeHandle nh;
+    ros_imu_server imu;
     // ros_led_server led;
     // ros_sonar_server sonar;
     // debug_scenario debug;
