@@ -46,9 +46,9 @@ public:
             message.gyro[2] = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
             sensor_channel_get(dev, SENSOR_CHAN_DIE_TEMP, &v);
             message.temp = static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
+            while (k_msgq_put(&imu_controller_msgq, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&imu_controller_msgq);
         }
-        while (k_msgq_put(&imu_controller_msgq, &message, K_NO_WAIT) != 0)
-            k_msgq_purge(&imu_controller_msgq);
         k_msleep(10);
     }
 private:
