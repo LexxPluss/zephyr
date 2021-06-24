@@ -116,22 +116,22 @@ class host_communicator {
 public:
     int setup() {
         nh.initNode();
-        nh.advertiseService(led.server);
-        nh.advertise(sonar.pub);
+        // nh.advertiseService(led.server);
+        // nh.advertise(sonar.pub);
         // debug.init();
         return 0;
     }
     void loop() {
         nh.spinOnce();
-        led.poll();
-        sonar.poll(nh);
+        // led.poll();
+        // sonar.poll(nh);
         // debug.poll(led);
         k_msleep(1);
     }
 private:
     ros::NodeHandle nh;
-    ros_led_server led;
-    ros_sonar_server sonar;
+    // ros_led_server led;
+    // ros_sonar_server sonar;
     // debug_scenario debug;
 };
 
