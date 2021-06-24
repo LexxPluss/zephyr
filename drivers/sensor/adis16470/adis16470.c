@@ -44,30 +44,6 @@ struct adis16470_config {
 
 static int adis16470_reg_read(const struct adis16470_data *data, uint8_t reg, uint16_t *value)
 {
-#if 1
-    uint16_t buffer_tx[2], buffer_rx[2];
-    struct spi_buf spibuf_tx, spibuf_rx;
-    struct spi_buf_set tx, rx;
-    buffer_tx[0] = (reg & 0x7f) << 8;
-    buffer_tx[1] = (reg & 0x7f) << 8;
-    buffer_rx[0] = 0;
-    buffer_rx[1] = 0;
-    spibuf_tx.buf = buffer_tx;
-    spibuf_tx.len = 2;
-    spibuf_rx.buf = buffer_rx;
-    spibuf_rx.len = 2;
-    tx.buffers = &spibuf_tx;
-    tx.count = 1;
-    rx.buffers = &spibuf_rx;
-    rx.count = 1;
-    int status = spi_transceive(data->spi, &data->spi_cfg, &tx, &rx);
-    if (status) {
-        LOG_ERR("SPI transceive error %d", status);
-        return -1;
-    }
-    *value = buffer_rx[1];
-    return 0;
-#else
     uint16_t buffer = (reg & 0x7f) << 8;
     struct spi_buf spibuf;
     spibuf.buf = &buffer;
@@ -80,32 +56,41 @@ static int adis16470_reg_read(const struct adis16470_data *data, uint8_t reg, ui
         LOG_ERR("SPI write error %d", status);
         return -1;
     }
+    k_usleep(20);
+    buffer = 0;
     status = spi_read(data->spi, &data->spi_cfg, &bufset);
     if (status) {
         LOG_ERR("SPI read error %d", status);
         return -1;
     }
+    k_usleep(20);
     *value = buffer;
     return 0;
-#endif
 }
 
 static int adis16470_reg_write(const struct adis16470_data *data, uint8_t reg, uint16_t value)
 {
-    uint16_t buffer[2];
-    buffer[0] = ((0x80 |   (reg & 0x7f)) << 8) | (value & 0xff);
-    buffer[1] = ((0x80 | (++reg & 0x7f)) << 8) | ((value >> 8) & 0xff);
+    uint16_t buffer;
+    buffer = ((0x80 |   (reg & 0x7f)) << 8) | (value & 0xff);
     struct spi_buf spibuf;
-    spibuf.buf = buffer;
-    spibuf.len = 2;
-    struct spi_buf_set tx;
-    tx.buffers = &spibuf;
-    tx.count = 1;
-    int status = spi_write(data->spi, &data->spi_cfg, &tx);
+    spibuf.buf = &buffer;
+    spibuf.len = 1;
+    struct spi_buf_set bufset;
+    bufset.buffers = &spibuf;
+    bufset.count = 1;
+    int status = spi_write(data->spi, &data->spi_cfg, &bufset);
     if (status) {
         LOG_ERR("SPI write error %d", status);
         return -1;
     }
+    k_usleep(20);
+    buffer = ((0x80 | (++reg & 0x7f)) << 8) | ((value >> 8) & 0xff);
+    status = spi_write(data->spi, &data->spi_cfg, &bufset);
+    if (status) {
+        LOG_ERR("SPI write error %d", status);
+        return -1;
+    }
+    k_usleep(20);
     return 0;
 }
 
@@ -134,7 +119,7 @@ static int adis16470_self_test(const struct adis16470_data *data)
     if (result != 0)
         return result;
     if (value != 0x4056) {
-        LOG_ERR("PROD_ID error %u", value);
+        LOG_ERR("PROD_ID error %04x", value);
         return -1;
     }
     return 0;
