@@ -30,6 +30,8 @@ struct sonar_message {
 struct imu_message {
     float accel[3];
     float gyro[3];
+    float delta_ang[3];
+    float delta_vel[3];
     float temp;
 } __attribute__((aligned(4)));
 

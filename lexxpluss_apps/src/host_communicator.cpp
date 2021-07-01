@@ -67,24 +67,34 @@ private:
 };
 
 class ros_imu_server {
+private:
+    class imupub {
+    public:
+        imupub(const char *name) : pub(name, &ros_msg) {}
+        void poll(ros::NodeHandle &nh, const float *data) {
+            ros_msg.x = data[0];
+            ros_msg.y = data[1];
+            ros_msg.z = data[2];
+            pub.publish(&ros_msg);
+        }
+        ros::Publisher pub;
+    private:
+        geometry_msgs::Vector3 ros_msg;
+    };
 public:
     void poll(ros::NodeHandle &nh) {
         imu_message message;
         if (k_msgq_get(&imu_controller_msgq, &message, K_NO_WAIT) == 0) {
-            gyro_msg.x = message.gyro[0];
-            gyro_msg.y = message.gyro[1];
-            gyro_msg.z = message.gyro[2];
-            pub_gyro.publish(&gyro_msg);
-            accel_msg.x = message.accel[0];
-            accel_msg.y = message.accel[1];
-            accel_msg.z = message.accel[2];
-            pub_accel.publish(&accel_msg);
+            gyro.poll(nh, message.gyro);
+            accel.poll(nh, message.accel);
+            angle.poll(nh, message.delta_ang);
+            velocity.poll(nh, message.delta_vel);
         }
     }
-    ros::Publisher pub_gyro{"adis16470_gyro_data", &gyro_msg};
-    ros::Publisher pub_accel{"adis16470_accel_data", &accel_msg};
-private:
-    geometry_msgs::Vector3 gyro_msg, accel_msg;
+    imupub gyro{"adis16470_gyro_data"};
+    imupub accel{"adis16470_accel_data"};
+    imupub angle{"adis16470_ang_data"};
+    imupub velocity{"adis16470_vel_data"};
 };
 
 #if 0
@@ -128,8 +138,10 @@ class host_communicator {
 public:
     int setup() {
         nh.initNode();
-        nh.advertise(imu.pub_gyro);
-        nh.advertise(imu.pub_accel);
+        nh.advertise(imu.gyro.pub);
+        nh.advertise(imu.accel.pub);
+        nh.advertise(imu.angle.pub);
+        nh.advertise(imu.velocity.pub);
         // nh.advertiseService(led.server);
         // nh.advertise(sonar.pub);
         // debug.init();

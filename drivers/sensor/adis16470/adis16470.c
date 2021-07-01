@@ -10,23 +10,29 @@
 
 LOG_MODULE_REGISTER(ADIS16470, CONFIG_SENSOR_LOG_LEVEL);
 
-#define ADIS16470_REG_DIAG_STAT  0x02
-#define ADIS16470_REG_X_GYRO_LOW 0x04
-#define ADIS16470_REG_X_GYRO_OUT 0x06
-#define ADIS16470_REG_Y_GYRO_LOW 0x08
-#define ADIS16470_REG_Y_GYRO_OUT 0x0a
-#define ADIS16470_REG_Z_GYRO_LOW 0x0c
-#define ADIS16470_REG_Z_GYRO_OUT 0x0e
-#define ADIS16470_REG_X_ACCL_LOW 0x10
-#define ADIS16470_REG_X_ACCL_OUT 0x12
-#define ADIS16470_REG_Y_ACCL_LOW 0x14
-#define ADIS16470_REG_Y_ACCL_OUT 0x16
-#define ADIS16470_REG_Z_ACCL_LOW 0x18
-#define ADIS16470_REG_Z_ACCL_OUT 0x1a
-#define ADIS16470_REG_TEMP_OUT   0x1c
-#define ADIS16470_REG_MSC_CTRL   0x60
-#define ADIS16470_REG_GLOB_CMD   0x68
-#define ADIS16470_REG_PROD_ID    0x72
+#define ADIS16470_REG_DIAG_STAT     0x02
+#define ADIS16470_REG_X_GYRO_LOW    0x04
+#define ADIS16470_REG_X_GYRO_OUT    0x06
+#define ADIS16470_REG_Y_GYRO_LOW    0x08
+#define ADIS16470_REG_Y_GYRO_OUT    0x0a
+#define ADIS16470_REG_Z_GYRO_LOW    0x0c
+#define ADIS16470_REG_Z_GYRO_OUT    0x0e
+#define ADIS16470_REG_X_ACCL_LOW    0x10
+#define ADIS16470_REG_X_ACCL_OUT    0x12
+#define ADIS16470_REG_Y_ACCL_LOW    0x14
+#define ADIS16470_REG_Y_ACCL_OUT    0x16
+#define ADIS16470_REG_Z_ACCL_LOW    0x18
+#define ADIS16470_REG_Z_ACCL_OUT    0x1a
+#define ADIS16470_REG_TEMP_OUT      0x1c
+#define ADIS16470_REG_X_DELTANG_OUT 0x26
+#define ADIS16470_REG_Y_DELTANG_OUT 0x2a
+#define ADIS16470_REG_Z_DELTANG_OUT 0x2e
+#define ADIS16470_REG_X_DELTVEL_OUT 0x32
+#define ADIS16470_REG_Y_DELTVEL_OUT 0x36
+#define ADIS16470_REG_Z_DELTVEL_OUT 0x3a
+#define ADIS16470_REG_MSC_CTRL      0x60
+#define ADIS16470_REG_GLOB_CMD      0x68
+#define ADIS16470_REG_PROD_ID       0x72
 
 struct adis16470_data {
     const struct device *spi;
@@ -34,6 +40,8 @@ struct adis16470_data {
     int64_t gyro[3]; // micro rad/s
     int64_t accl[3]; // micro m/s/s
     int64_t temp;    // micro degc
+    int64_t delta_ang[3]; // micro rad
+    int64_t delta_vel[3]; // micro m/s
 };
 
 struct adis16470_config {
@@ -172,6 +180,24 @@ static int adis16470_init(const struct device *dev)
     return 0;
 }
 
+static int adis16470_sample_fetch_delta_ang(struct adis16470_data *data, uint32_t reg, int64_t *value)
+{
+    int16_t v;
+    int status = adis16470_reg_read(data, reg, &v);
+    if (status == 0)
+        *value = (int64_t)v * SENSOR_PI * 2160LL / 32768LL / 180LL;
+    return status;
+}
+
+static int adis16470_sample_fetch_delta_vel(struct adis16470_data *data, uint32_t reg, int64_t *value)
+{
+    int16_t v;
+    int status = adis16470_reg_read(data, reg, &v);
+    if (status == 0)
+        *value = (int64_t)v * 400LL * 1000000LL / 32768LL;
+    return status;
+}
+
 static int adis16470_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
     struct adis16470_data *data = dev->data;
@@ -192,7 +218,7 @@ static int adis16470_sample_fetch(const struct device *dev, enum sensor_channel 
     rx.buffers = &spibuf_rx;
     rx.count = 1;
     int status = spi_transceive(data->spi, &data->spi_cfg, &tx, &rx);
-    if (status) {
+    if (status != 0) {
         LOG_ERR("SPI transceive error %d", status);
         return -1;
     }
@@ -209,7 +235,25 @@ static int adis16470_sample_fetch(const struct device *dev, enum sensor_channel 
     for (int i = 0; i < 3; ++i)
         data->accl[i] = (int64_t)buffer[1].accl_out[i] * SENSOR_G / 800LL;
     data->temp = (int64_t)buffer[1].temp_out * 1000000LL / 10LL;
-    return 0;
+
+    status = adis16470_sample_fetch_delta_ang(data, ADIS16470_REG_X_DELTANG_OUT, &data->delta_ang[0]);
+    if (status == 0)
+        status = adis16470_sample_fetch_delta_ang(data, ADIS16470_REG_Y_DELTANG_OUT, &data->delta_ang[1]);
+    if (status == 0)
+        status = adis16470_sample_fetch_delta_ang(data, ADIS16470_REG_Z_DELTANG_OUT, &data->delta_ang[2]);
+    if (status == 0)
+        status = adis16470_sample_fetch_delta_vel(data, ADIS16470_REG_X_DELTVEL_OUT, &data->delta_vel[0]);
+    if (status == 0)
+        status = adis16470_sample_fetch_delta_vel(data, ADIS16470_REG_Y_DELTVEL_OUT, &data->delta_vel[1]);
+    if (status == 0)
+        status = adis16470_sample_fetch_delta_vel(data, ADIS16470_REG_Z_DELTVEL_OUT, &data->delta_vel[2]);
+    return status;
+}
+
+static void store_value(struct sensor_value *val, int64_t data)
+{
+	val->val1 = data / 1000000;
+	val->val2 = data % 1000000;
 }
 
 static int adis16470_channel_get(const struct device *dev,
@@ -218,36 +262,21 @@ static int adis16470_channel_get(const struct device *dev,
 {
     struct adis16470_data *data = dev->data;
     switch (chan) {
-    case SENSOR_CHAN_GYRO_X:
-        val->val1 = data->gyro[0] / 1000000;
-        val->val2 = data->gyro[0] % 1000000;
-        break;
-    case SENSOR_CHAN_GYRO_Y:
-        val->val1 = data->gyro[1] / 1000000;
-        val->val2 = data->gyro[1] % 1000000;
-        break;
-    case SENSOR_CHAN_GYRO_Z:
-        val->val1 = data->gyro[2] / 1000000;
-        val->val2 = data->gyro[2] % 1000000;
-        break;
-    case SENSOR_CHAN_ACCEL_X:
-        val->val1 = data->accl[0] / 1000000;
-        val->val2 = data->accl[0] % 1000000;
-        break;
-    case SENSOR_CHAN_ACCEL_Y:
-        val->val1 = data->accl[1] / 1000000;
-        val->val2 = data->accl[1] % 1000000;
-        break;
-    case SENSOR_CHAN_ACCEL_Z:
-        val->val1 = data->accl[2] / 1000000;
-        val->val2 = data->accl[2] % 1000000;
-        break;
-    case SENSOR_CHAN_DIE_TEMP:
-        val->val1 = data->temp / 1000000;
-        val->val2 = data->temp % 1000000;
-        break;
+    case SENSOR_CHAN_GYRO_X:   store_value(val, data->gyro[0]); break;
+    case SENSOR_CHAN_GYRO_Y:   store_value(val, data->gyro[1]); break;
+    case SENSOR_CHAN_GYRO_Z:   store_value(val, data->gyro[2]); break;
+    case SENSOR_CHAN_ACCEL_X:  store_value(val, data->accl[0]); break;
+    case SENSOR_CHAN_ACCEL_Y:  store_value(val, data->accl[1]); break;
+    case SENSOR_CHAN_ACCEL_Z:  store_value(val, data->accl[2]); break;
+    case SENSOR_CHAN_DIE_TEMP: store_value(val, data->temp);    break;
     default:
-        return -ENOTSUP;
+        if      (chan == SENSOR_CHAN_PRIV_START)     store_value(val, data->delta_ang[0]);
+        else if (chan == SENSOR_CHAN_PRIV_START + 1) store_value(val, data->delta_ang[1]);
+        else if (chan == SENSOR_CHAN_PRIV_START + 2) store_value(val, data->delta_ang[2]);
+        else if (chan == SENSOR_CHAN_PRIV_START + 3) store_value(val, data->delta_vel[0]);
+        else if (chan == SENSOR_CHAN_PRIV_START + 4) store_value(val, data->delta_vel[1]);
+        else if (chan == SENSOR_CHAN_PRIV_START + 5) store_value(val, data->delta_vel[2]);
+        else                                         return -ENOTSUP;
     }
     return 0;
 }
