@@ -24,11 +24,17 @@ LOG_MODULE_REGISTER(ADIS16470, CONFIG_SENSOR_LOG_LEVEL);
 #define ADIS16470_REG_Z_ACCL_LOW    0x18
 #define ADIS16470_REG_Z_ACCL_OUT    0x1a
 #define ADIS16470_REG_TEMP_OUT      0x1c
+#define ADIS16470_REG_X_DELTANG_LOW 0x24
 #define ADIS16470_REG_X_DELTANG_OUT 0x26
+#define ADIS16470_REG_Y_DELTANG_LOW 0x28
 #define ADIS16470_REG_Y_DELTANG_OUT 0x2a
+#define ADIS16470_REG_Z_DELTANG_LOW 0x2c
 #define ADIS16470_REG_Z_DELTANG_OUT 0x2e
+#define ADIS16470_REG_X_DELTVEL_LOW 0x30
 #define ADIS16470_REG_X_DELTVEL_OUT 0x32
+#define ADIS16470_REG_Y_DELTVEL_LOW 0x34
 #define ADIS16470_REG_Y_DELTVEL_OUT 0x36
+#define ADIS16470_REG_Z_DELTVEL_LOW 0x38
 #define ADIS16470_REG_Z_DELTVEL_OUT 0x3a
 #define ADIS16470_REG_MSC_CTRL      0x60
 #define ADIS16470_REG_GLOB_CMD      0x68
@@ -99,6 +105,19 @@ static int adis16470_reg_write(const struct adis16470_data *data, uint8_t reg, u
         return -1;
     }
     k_usleep(20);
+    return 0;
+}
+
+static int adis16470_reg_read_pair(const struct adis16470_data *data, uint8_t reg[2], uint32_t *value)
+{
+    uint16_t v[2];
+    int status = adis16470_reg_read(data, reg[0], &v[0]);
+    if (status < 0)
+        return status;
+    status = adis16470_reg_read(data, reg[1], &v[1]);
+    if (status < 0)
+        return status;
+    *value = ((uint32_t)v[1] << 16) | (uint32_t)v[0];
     return 0;
 }
 
@@ -180,74 +199,69 @@ static int adis16470_init(const struct device *dev)
     return 0;
 }
 
+static int adis16470_sample_fetch_gyro(struct adis16470_data *data, uint32_t reg, int64_t *value)
+{
+    uint8_t r[2] = {reg - 2, reg};
+    int32_t v;
+    int status = adis16470_reg_read_pair(data, r, &v);
+    if (status < 0)
+        return status;
+    *value = (int64_t)v * SENSOR_PI / 180LL / 10LL / 65536LL;
+    return 0;
+}
+
+static int adis16470_sample_fetch_accel(struct adis16470_data *data, uint32_t reg, int64_t *value)
+{
+    uint8_t r[2] = {reg - 2, reg};
+    int32_t v;
+    int status = adis16470_reg_read_pair(data, r, &v);
+    if (status < 0)
+        return status;
+    *value = (int64_t)v * SENSOR_G / 800LL / 65536LL;
+    return 0;
+}
+
 static int adis16470_sample_fetch_delta_ang(struct adis16470_data *data, uint32_t reg, int64_t *value)
 {
-    int16_t v;
-    int status = adis16470_reg_read(data, reg, &v);
-    if (status == 0)
-        *value = (int64_t)v * SENSOR_PI * 2160LL / 32768LL / 180LL;
-    return status;
+    uint8_t r[2] = {reg - 2, reg};
+    int32_t v;
+    int status = adis16470_reg_read_pair(data, r, &v);
+    if (status < 0)
+        return status;
+    *value = (int64_t)v * SENSOR_PI * 2160LL / 2147483648LL / 180LL;
+    return 0;
 }
 
 static int adis16470_sample_fetch_delta_vel(struct adis16470_data *data, uint32_t reg, int64_t *value)
 {
-    int16_t v;
-    int status = adis16470_reg_read(data, reg, &v);
-    if (status == 0)
-        *value = (int64_t)v * 400LL * 1000000LL / 32768LL;
-    return status;
+    uint8_t r[2] = {reg - 2, reg};
+    int32_t v;
+    int status = adis16470_reg_read_pair(data, r, &v);
+    if (status < 0)
+        return status;
+    *value = (int64_t)v * 400LL * 1000000LL / 2147483648LL;
+    return 0;
 }
 
 static int adis16470_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
     struct adis16470_data *data = dev->data;
-    struct {
-        uint16_t header, diag_stat;
-        int16_t gyro_out[3], accl_out[3], temp_out;
-        uint16_t data_cntr, checksum;
-    } buffer[2] = {0};
-    struct spi_buf spibuf_tx, spibuf_rx;
-    struct spi_buf_set tx, rx;
-    buffer[0].header = (ADIS16470_REG_GLOB_CMD & 0x7f) << 8;
-    spibuf_tx.buf = &buffer[0];
-    spibuf_tx.len = sizeof buffer[0] / sizeof (uint16_t);
-    spibuf_rx.buf = &buffer[1];
-    spibuf_rx.len = sizeof buffer[1] / sizeof (uint16_t);
-    tx.buffers = &spibuf_tx;
-    tx.count = 1;
-    rx.buffers = &spibuf_rx;
-    rx.count = 1;
-    int status = spi_transceive(data->spi, &data->spi_cfg, &tx, &rx);
-    if (status != 0) {
-        LOG_ERR("SPI transceive error %d", status);
-        return -1;
+    static const uint8_t gyro_reg[3] = {ADIS16470_REG_X_GYRO_OUT, ADIS16470_REG_Y_GYRO_OUT, ADIS16470_REG_Z_GYRO_OUT};
+    static const uint8_t accl_reg[3] = {ADIS16470_REG_X_ACCL_OUT, ADIS16470_REG_Y_ACCL_OUT, ADIS16470_REG_Z_ACCL_OUT};
+    static const uint8_t ang_reg[3] = {ADIS16470_REG_X_DELTANG_OUT, ADIS16470_REG_Y_DELTANG_OUT, ADIS16470_REG_Z_DELTANG_OUT};
+    static const uint8_t vel_reg[3] = {ADIS16470_REG_X_DELTVEL_OUT, ADIS16470_REG_Y_DELTVEL_OUT, ADIS16470_REG_Z_DELTVEL_OUT};
+    for (int i = 0; i < 3; ++i) {
+        int status = adis16470_sample_fetch_gyro(data, gyro_reg[i], &data->gyro[i]);
+        if (status == 0)
+            status = adis16470_sample_fetch_accel(data, accl_reg[i], &data->accl[i]);
+        if (status == 0)
+            status = adis16470_sample_fetch_delta_ang(data, ang_reg[i], &data->delta_ang[i]);
+        if (status == 0)
+            status = adis16470_sample_fetch_delta_vel(data, vel_reg[i], &data->delta_vel[i]);
+        if (status < 0)
+            return status;
     }
-    const uint8_t *p = (uint8_t*)&buffer[1].diag_stat;
-    uint16_t sum = 0;
-    for (int i = 0; i < 18; ++i)
-        sum += *p++;
-    if (sum != buffer[1].checksum) {
-        LOG_ERR("invalid checksum %04x %04x", sum, buffer[1].checksum);
-        return -1;
-    }
-    for (int i = 0; i < 3; ++i)
-        data->gyro[i] = (int64_t)buffer[1].gyro_out[i] * SENSOR_PI / 180LL / 10LL;
-    for (int i = 0; i < 3; ++i)
-        data->accl[i] = (int64_t)buffer[1].accl_out[i] * SENSOR_G / 800LL;
-    data->temp = (int64_t)buffer[1].temp_out * 1000000LL / 10LL;
-
-    status = adis16470_sample_fetch_delta_ang(data, ADIS16470_REG_X_DELTANG_OUT, &data->delta_ang[0]);
-    if (status == 0)
-        status = adis16470_sample_fetch_delta_ang(data, ADIS16470_REG_Y_DELTANG_OUT, &data->delta_ang[1]);
-    if (status == 0)
-        status = adis16470_sample_fetch_delta_ang(data, ADIS16470_REG_Z_DELTANG_OUT, &data->delta_ang[2]);
-    if (status == 0)
-        status = adis16470_sample_fetch_delta_vel(data, ADIS16470_REG_X_DELTVEL_OUT, &data->delta_vel[0]);
-    if (status == 0)
-        status = adis16470_sample_fetch_delta_vel(data, ADIS16470_REG_Y_DELTVEL_OUT, &data->delta_vel[1]);
-    if (status == 0)
-        status = adis16470_sample_fetch_delta_vel(data, ADIS16470_REG_Z_DELTVEL_OUT, &data->delta_vel[2]);
-    return status;
+    return 0;
 }
 
 static void store_value(struct sensor_value *val, int64_t data)
