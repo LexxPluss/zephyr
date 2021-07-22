@@ -15,7 +15,7 @@ public:
         uart_dev = device_get_binding("UART_7");
         if (uart_dev != nullptr) {
             uart_config config{
-                .baudrate = 57600,
+                .baudrate = 115200,
                 .parity = UART_CFG_PARITY_NONE,
                 .stop_bits = UART_CFG_STOP_BITS_1,
                 .data_bits = UART_CFG_DATA_BITS_8,
@@ -70,7 +70,7 @@ private:
     }
     struct {
         ring_buf rx, tx;
-        uint8_t rbuf[256], tbuf[256];
+        uint8_t rbuf[1024], tbuf[1024];
     } ringbuf;
     const device* uart_dev = nullptr;
 };
