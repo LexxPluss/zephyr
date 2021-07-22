@@ -49,7 +49,7 @@ public:
             while (k_msgq_put(&imu_controller_msgq, &message, K_NO_WAIT) != 0)
                 k_msgq_purge(&imu_controller_msgq);
         }
-        k_msleep(10);
+        k_msleep(1);
     }
 private:
     float get_sensor_value_as_float(enum sensor_channel chan, uint32_t offset) const {
