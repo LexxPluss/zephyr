@@ -37,12 +37,20 @@ LOG_MODULE_REGISTER(ADIS16470, CONFIG_SENSOR_LOG_LEVEL);
 #define ADIS16470_REG_Z_DELTVEL_LOW 0x38
 #define ADIS16470_REG_Z_DELTVEL_OUT 0x3a
 #define ADIS16470_REG_MSC_CTRL      0x60
+#define ADIS16470_REG_DEC_RATE      0x64
 #define ADIS16470_REG_GLOB_CMD      0x68
 #define ADIS16470_REG_PROD_ID       0x72
 
+struct adis16470_cb_data {
+    struct gpio_callback cb;
+    struct k_sem sem;
+};
+
 struct adis16470_data {
     const struct device *spi;
+    const struct device *dr;
     struct spi_config spi_cfg;
+    struct adis16470_cb_data cb;
     int64_t gyro[3]; // micro rad/s
     int64_t accl[3]; // micro m/s/s
     int64_t temp;    // micro degc
@@ -154,17 +162,17 @@ static int adis16470_self_test(const struct adis16470_data *data)
 
 static int adis16470_configure(const struct adis16470_data *data)
 {
-#if 0
-    uint16_t value;
-    int result = adis16470_reg_read(data, ADIS16470_REG_MSC_CTRL, &value);
+    uint16_t value = 49;
+    int result = adis16470_reg_write(data, ADIS16470_REG_DEC_RATE, value);
     if (result != 0)
         return result;
-    value &= ~0x0001;
-    result = adis16470_reg_write(data, ADIS16470_REG_MSC_CTRL, value);
-    if (result != 0)
-        return result;
-#endif
     return 0;
+}
+
+static void adis16470_dr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    struct adis16470_cb_data *cb_data = (struct adis16470_cb_data*)cb;
+    k_sem_give(&cb_data->sem);
 }
 
 static int adis16470_init(const struct device *dev)
@@ -177,6 +185,16 @@ static int adis16470_init(const struct device *dev)
         LOG_DBG("spi device not found: %s", config->spi_name);
         return -EINVAL;
     }
+    data->dr = device_get_binding("GPIOD");
+    if (data->dr == NULL) {
+        LOG_DBG("spi device not found: GPIOD");
+        return -EINVAL;
+    }
+    gpio_pin_configure(data->dr, 4, GPIO_INPUT | GPIO_ACTIVE_HIGH);
+    gpio_pin_interrupt_configure(data->dr, 4, GPIO_INT_EDGE_RISING);
+    gpio_init_callback(&data->cb.cb, adis16470_dr, BIT(4));
+    k_sem_init(&data->cb.sem, 0, 1);
+    gpio_add_callback(data->dr, &data->cb.cb);
     data->spi_cfg.operation =
         SPI_WORD_SET(16) | SPI_TRANSFER_MSB | SPI_MODE_CPOL | SPI_MODE_CPHA;
     data->spi_cfg.frequency = config->spi_max_frequency;
@@ -246,6 +264,8 @@ static int adis16470_sample_fetch_delta_vel(struct adis16470_data *data, uint32_
 static int adis16470_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
     struct adis16470_data *data = dev->data;
+    if (k_sem_take(&data->cb.sem, K_MSEC(100)) != 0)
+        return -1;
     static const uint8_t gyro_reg[3] = {ADIS16470_REG_X_GYRO_OUT, ADIS16470_REG_Y_GYRO_OUT, ADIS16470_REG_Z_GYRO_OUT};
     static const uint8_t accl_reg[3] = {ADIS16470_REG_X_ACCL_OUT, ADIS16470_REG_Y_ACCL_OUT, ADIS16470_REG_Z_ACCL_OUT};
     static const uint8_t ang_reg[3] = {ADIS16470_REG_X_DELTANG_OUT, ADIS16470_REG_Y_DELTANG_OUT, ADIS16470_REG_Z_DELTANG_OUT};
@@ -311,3 +331,5 @@ static const struct adis16470_config adis16470_config = {
 DEVICE_DT_INST_DEFINE(0, adis16470_init, NULL, &adis16470_data,
         &adis16470_config, POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,
         &adis16470_api_funcs);
+
+/* vim: set expandtab shiftwidth=4: */
