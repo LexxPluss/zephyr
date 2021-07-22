@@ -266,8 +266,8 @@ static int adis16470_sample_fetch(const struct device *dev, enum sensor_channel 
 
 static void store_value(struct sensor_value *val, int64_t data)
 {
-	val->val1 = data / 1000000;
-	val->val2 = data % 1000000;
+        val->val1 = data / 1000000;
+        val->val2 = data % 1000000;
 }
 
 static int adis16470_channel_get(const struct device *dev,
