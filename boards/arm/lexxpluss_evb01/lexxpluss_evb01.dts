@@ -64,6 +64,13 @@
 			echo-gpios = <&gpiog 7 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
+		us4: maxbotix-0 {
+			compatible = "maxbotix,maxbotix";
+			label = "MAXBOTIX_0";
+			trig-gpios = <&gpiog 2 GPIO_ACTIVE_HIGH>;
+			echo-gpios = <&gpiog 3 GPIO_ACTIVE_HIGH>;
+			status = "okay";
+		};
 	};
 
 	aliases {
