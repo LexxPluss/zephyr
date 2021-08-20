@@ -39,9 +39,21 @@ struct fan_message {
     uint32_t duty_percent[2];
 } __attribute__((aligned(4)));
 
+struct pgv_message {
+    uint32_t xp, tag;
+    int32_t xps;
+    int16_t yps;
+    uint16_t ang, cc1, cc2, wrn;
+    uint8_t addr, lane, o1, s1, o2, s2;
+    struct {
+        bool cc2, cc1, wrn, np, err, tag, rp, nl, ll, rl;
+    } f;
+} __attribute__((aligned(4)));
+
 extern k_msgq led_controller_msgq;
 extern k_msgq sonar_controller_msgq;
 extern k_msgq imu_controller_msgq;
 extern k_msgq fan_controller_msgq;
+extern k_msgq pgv_controller_msgq;
 
 /* vim: set expandtab shiftwidth=4: */

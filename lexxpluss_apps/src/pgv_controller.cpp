@@ -2,20 +2,14 @@
 #include <device.h>
 #include <drivers/uart.h>
 #include <sys/ring_buffer.h>
+#include "message.hpp"
 #include "thread_runner.hpp"
+
+k_msgq pgv_controller_msgq;
 
 namespace {
 
-struct pgv_position {
-    uint32_t xp, tag;
-    int32_t xps;
-    int16_t yps;
-    uint16_t ang, cc1, cc2, wrn;
-    uint8_t addr, lane, o1, s1, o2, s2;
-    struct {
-        bool cc2, cc1, wrn, np, err, tag, rp, nl, ll, rl;
-    } f;
-};
+char __aligned(4) pgv_controller_msgq_buffer[10 * sizeof (pgv_message)];
 
 class pgv_driver {
 public:
@@ -36,10 +30,11 @@ public:
             uart_irq_tx_disable(dev);
             uart_irq_callback_user_data_set(dev, uart_isr_trampoline, this);
             uart_irq_rx_enable(dev);
+            direction_decision(DIR::STRAIGHT);
         }
         return dev == nullptr ? -1 : 0;
     }
-    bool get_position(pgv_position &data) {
+    bool get_position(pgv_message &data) {
         ring_buf_reset(&rxbuf.rb);
         uint8_t req[2];
         req[0] = 0xc8;
@@ -52,13 +47,18 @@ public:
         }
         uint8_t buf[64];
         int n = ring_buf_get(&rxbuf.rb, buf, sizeof buf);
-        if (n < 21 || validate(buf))
+        if (n < 21 || validate(buf, 21))
             return false;
         decode(buf, data);
         return true;
     }
 private:
-    void decode(const uint8_t *buf, pgv_position &data) const {
+    enum class DIR {
+        RIGHT,
+        LEFT,
+        STRAIGHT
+    };
+    void decode(const uint8_t *buf, pgv_message &data) const {
         data.f.cc2 =  (buf[ 0] & 0x40) != 0;
         data.addr  =  (buf[ 0] & 0x30) >> 4;
         data.f.cc1 =  (buf[ 0] & 0x08) != 0;
@@ -112,11 +112,20 @@ private:
             data.tag = 0;
         }
     }
-    bool validate(const uint8_t buf[21]) const {
+    void direction_decision(DIR dir) {
+        switch (dir) {
+        case DIR::RIGHT:
+        case DIR::LEFT:
+        case DIR::STRAIGHT:
+            break;
+        }
+    }
+    bool validate(const uint8_t *buf, uint32_t length) const {
+        uint32_t tail = length - 1;
         uint8_t check = buf[0];
-        for (int i = 1; i < 20; ++i)
+        for (uint32_t i = 1; i < tail; ++i)
             check ^= buf[i];
-        return check == buf[20];
+        return check == buf[tail];
     }
     uint32_t rb_count(const ring_buf *rb) const {
 	return rb->tail - rb->head;
@@ -130,6 +139,17 @@ private:
                 length -= n;
             }
         }
+    }
+    bool wait_data(uint32_t length) const {
+        for (int i = 0; i < 100; ++i) {
+            if (rb_count(&rxbuf.rb) >= length) 
+                return true;
+            k_msleep(10);
+            return false;
+        }
+    }
+    int recv(uint8_t *buf, uint32_t length) {
+        return ring_buf_get(&rxbuf.rb, buf, length);
     }
     bool is_received() {
         return !ring_buf_is_empty(&rxbuf.rb);
@@ -165,12 +185,16 @@ private:
 class pgv_controller {
 public:
     int setup() {
+        k_msgq_init(&pgv_controller_msgq, pgv_controller_msgq_buffer, sizeof (pgv_message), 10);
         return driver.init();
     }
     void loop() {
-        pgv_position pos;
-        driver.get_position(pos);
-        k_msleep(10);
+        pgv_message message;
+        if (driver.get_position(message)) {
+            while (k_msgq_put(&pgv_controller_msgq, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&pgv_controller_msgq);
+        }
+        k_msleep(30);
     }
 private:
     pgv_driver driver;
