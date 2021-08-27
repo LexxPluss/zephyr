@@ -4,6 +4,7 @@
 #include <device.h>
 #include <drivers/uart.h>
 #include <sys/ring_buffer.h>
+#include "ros/node_handle.h"
 
 class rosserial_hardware_zephyr {
 public:
@@ -71,5 +72,9 @@ private:
         ring_buf rx, tx;
         uint8_t rbuf[256], tbuf[256];
     } ringbuf;
-    const device* uart_dev = nullptr;
+    const device* uart_dev{nullptr};
 };
+
+namespace ros {
+typedef NodeHandle_<rosserial_hardware_zephyr> NodeHandle;
+}
