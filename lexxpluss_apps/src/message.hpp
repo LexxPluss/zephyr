@@ -2,7 +2,7 @@
 
 #include <zephyr.h>
 
-struct led_message {
+struct msg_ros2led {
     uint32_t pattern;
     static constexpr uint32_t NONE = 0;
     static constexpr uint32_t EMERGENCY_STOP = 1;
@@ -19,4 +19,4 @@ struct led_message {
     static constexpr uint32_t MOVE_ACTUATOR = 15;
 } __attribute__((aligned(4)));
 
-extern k_msgq led_controller_msgq;
+extern k_msgq msgq_ros2led;

@@ -4,11 +4,11 @@
 #include "message.hpp"
 #include "thread_runner.hpp"
 
-k_msgq led_controller_msgq;
+k_msgq msgq_ros2led;
 
 namespace {
 
-char __aligned(4) led_controller_msgq_buffer[10 * sizeof (led_message)];
+char __aligned(4) msgq_ros2led_buffer[10 * sizeof (msg_ros2led)];
 
 class led_controller_impl {
 public:
@@ -25,19 +25,19 @@ public:
     void poll(uint32_t pattern) {
         switch (pattern) {
         default:
-        case led_message::NONE:            fill(black); break;
-        case led_message::EMERGENCY_STOP:  fill_strobe(emergency_stop, 10, 50, 1000); break;
-        case led_message::AMR_MODE:        fill(amr_mode); break;
-        case led_message::AGV_MODE:        fill(agv_mode); break;
-        case led_message::MISSION_PAUSE:   fill(mission_pause); break;
-        case led_message::PATH_BLOCKED:    fill(path_blocked); break;
-        case led_message::MANUAL_DRIVE:    fill(manual_drive); break;
-        case led_message::CHARGING:        break;
-        case led_message::WAITING_FOR_JOB: break;
-        case led_message::LEFT_WINKER:     fill_blink_sequence(sequence, LED_LEFT); break;
-        case led_message::RIGHT_WINKER:    fill_blink_sequence(sequence, LED_RIGHT); break;
-        case led_message::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
-        case led_message::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
+        case msg_ros2led::NONE:            fill(black); break;
+        case msg_ros2led::EMERGENCY_STOP:  fill_strobe(emergency_stop, 10, 50, 1000); break;
+        case msg_ros2led::AMR_MODE:        fill(amr_mode); break;
+        case msg_ros2led::AGV_MODE:        fill(agv_mode); break;
+        case msg_ros2led::MISSION_PAUSE:   fill(mission_pause); break;
+        case msg_ros2led::PATH_BLOCKED:    fill(path_blocked); break;
+        case msg_ros2led::MANUAL_DRIVE:    fill(manual_drive); break;
+        case msg_ros2led::CHARGING:        break;
+        case msg_ros2led::WAITING_FOR_JOB: break;
+        case msg_ros2led::LEFT_WINKER:     fill_blink_sequence(sequence, LED_LEFT); break;
+        case msg_ros2led::RIGHT_WINKER:    fill_blink_sequence(sequence, LED_RIGHT); break;
+        case msg_ros2led::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
+        case msg_ros2led::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
         }
         ++counter;
     }
@@ -109,12 +109,12 @@ const led_rgb led_controller_impl::black          {.r = 0x00, .g = 0x00, .b = 0x
 class led_controller {
 public:
     int setup() {
-        k_msgq_init(&led_controller_msgq, led_controller_msgq_buffer, sizeof (led_message), 10);
+        k_msgq_init(&msgq_ros2led, msgq_ros2led_buffer, sizeof (msg_ros2led), 10);
         return impl.init();
     }
     void loop() {
-        led_message message;
-        if (k_msgq_get(&led_controller_msgq, &message, K_MSEC(led_controller_impl::DELAY_MS)) == 0)
+        msg_ros2led message;
+        if (k_msgq_get(&msgq_ros2led, &message, K_MSEC(led_controller_impl::DELAY_MS)) == 0)
             impl.reset();
         impl.poll(message.pattern);
     }
