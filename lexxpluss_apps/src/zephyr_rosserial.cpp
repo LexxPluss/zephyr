@@ -19,23 +19,23 @@ public:
     }
 private:
     void callback(const std_msgs::String& req) {
-        if      (strcmp(req.data, "emergency_stop")  == 0) message.pattern = led_message::EMERGENCY_STOP;
-        else if (strcmp(req.data, "amr_mode")        == 0) message.pattern = led_message::AMR_MODE;
-        else if (strcmp(req.data, "agv_mode")        == 0) message.pattern = led_message::AGV_MODE;
-        else if (strcmp(req.data, "mission_pause")   == 0) message.pattern = led_message::MISSION_PAUSE;
-        else if (strcmp(req.data, "path_blocked")    == 0) message.pattern = led_message::PATH_BLOCKED;
-        else if (strcmp(req.data, "manual_drive")    == 0) message.pattern = led_message::MANUAL_DRIVE;
-        else if (strcmp(req.data, "charging")        == 0) message.pattern = led_message::CHARGING;
-        else if (strcmp(req.data, "waiting_for_job") == 0) message.pattern = led_message::WAITING_FOR_JOB;
-        else if (strcmp(req.data, "left_winker")     == 0) message.pattern = led_message::LEFT_WINKER;
-        else if (strcmp(req.data, "right_winker")    == 0) message.pattern = led_message::RIGHT_WINKER;
-        else if (strcmp(req.data, "both_winker")     == 0) message.pattern = led_message::BOTH_WINKER;
-        else if (strcmp(req.data, "move_actuator")   == 0) message.pattern = led_message::MOVE_ACTUATOR;
-        else                                               message.pattern = led_message::NONE;
+        if      (strcmp(req.data, "emergency_stop")  == 0) message.pattern = msg_ros2led::EMERGENCY_STOP;
+        else if (strcmp(req.data, "amr_mode")        == 0) message.pattern = msg_ros2led::AMR_MODE;
+        else if (strcmp(req.data, "agv_mode")        == 0) message.pattern = msg_ros2led::AGV_MODE;
+        else if (strcmp(req.data, "mission_pause")   == 0) message.pattern = msg_ros2led::MISSION_PAUSE;
+        else if (strcmp(req.data, "path_blocked")    == 0) message.pattern = msg_ros2led::PATH_BLOCKED;
+        else if (strcmp(req.data, "manual_drive")    == 0) message.pattern = msg_ros2led::MANUAL_DRIVE;
+        else if (strcmp(req.data, "charging")        == 0) message.pattern = msg_ros2led::CHARGING;
+        else if (strcmp(req.data, "waiting_for_job") == 0) message.pattern = msg_ros2led::WAITING_FOR_JOB;
+        else if (strcmp(req.data, "left_winker")     == 0) message.pattern = msg_ros2led::LEFT_WINKER;
+        else if (strcmp(req.data, "right_winker")    == 0) message.pattern = msg_ros2led::RIGHT_WINKER;
+        else if (strcmp(req.data, "both_winker")     == 0) message.pattern = msg_ros2led::BOTH_WINKER;
+        else if (strcmp(req.data, "move_actuator")   == 0) message.pattern = msg_ros2led::MOVE_ACTUATOR;
+        else                                               message.pattern = msg_ros2led::NONE;
         updated = true;
     }
     ros::Subscriber<std_msgs::String, ros_led> sub{"/body_control/led", &ros_led::callback, this};
-    led_message message{led_message::NONE};
+    msg_ros2led message{msg_ros2led::NONE};
     bool updated{false};
 };
 
