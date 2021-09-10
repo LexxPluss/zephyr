@@ -93,6 +93,10 @@ private:
             snprintf(direction, sizeof direction, "Straight Ahead");
             break;
         }
+        msg_ros2pgv ros2pgv;
+        ros2pgv.dir_command = req.dir_command;
+        while (k_msgq_put(&msgq_ros2pgv, &ros2pgv, K_NO_WAIT) != 0)
+            k_msgq_purge(&msgq_ros2pgv);
     }
     pf_pgv100::pgv_scan_data msg;
     ros::Publisher pub{"pgv100_scan", &msg};
