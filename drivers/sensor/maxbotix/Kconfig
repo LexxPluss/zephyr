@@ -1,0 +1,14 @@
+# MaxBotix Ultrasonic Ranging Module
+
+menuconfig MAXBOTIX
+	bool "MAXBOTIX Ultrasonic Ranging Module"
+	help
+	  Enable MAXBOTIX ultrasonic distance sensor.
+
+if MAXBOTIX
+
+module = MAXBOTIX
+module-str = MAXBOTIX
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif
