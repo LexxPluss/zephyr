@@ -196,14 +196,14 @@ public:
         return impl.init();
     }
     void loop() {
-        msg_pgv2ros toros;
-        if (impl.get_position(toros)) {
-            while (k_msgq_put(&msgq_pgv2ros, &toros, K_NO_WAIT) != 0)
+        msg_pgv2ros pgv2ros;
+        if (impl.get_position(pgv2ros)) {
+            while (k_msgq_put(&msgq_pgv2ros, &pgv2ros, K_NO_WAIT) != 0)
                 k_msgq_purge(&msgq_pgv2ros);
         }
-        msg_ros2pgv fromros;
-        if (k_msgq_get(&msgq_ros2pgv, &fromros, K_NO_WAIT) == 0) {
-            switch (fromros.dir_command) {
+        msg_ros2pgv ros2pgv;
+        if (k_msgq_get(&msgq_ros2pgv, &ros2pgv, K_NO_WAIT) == 0) {
+            switch (ros2pgv.dir_command) {
             case 0: impl.set_direction_decision(pgv_controller_impl::DIR::NOLANE);   break;
             case 1: impl.set_direction_decision(pgv_controller_impl::DIR::RIGHT);    break;
             case 2: impl.set_direction_decision(pgv_controller_impl::DIR::LEFT);     break;
