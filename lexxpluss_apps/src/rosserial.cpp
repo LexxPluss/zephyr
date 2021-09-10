@@ -155,7 +155,7 @@ private:
     ros::Subscriber<std_msgs::UInt16MultiArray, ros_actuator> sub_duty{"request_actuator_power", &ros_actuator::callback_duty, this};
 };
 
-class zephyr_rosserial {
+class rosserial {
 public:
     int setup() {
         nh.initNode(const_cast<char*>("UART_1"));
@@ -178,6 +178,6 @@ private:
     ros_actuator actuator;
 };
 
-LEXX_THREAD_RUNNER(zephyr_rosserial);
+LEXX_THREAD_RUNNER(rosserial);
 
 }
