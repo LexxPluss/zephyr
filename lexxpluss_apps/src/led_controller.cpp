@@ -21,7 +21,7 @@ public:
         update();
         return 0;
     }
-    void reset() {}
+    void reset() {counter = 0;}
     void poll(uint32_t pattern) {
         switch (pattern) {
         default:
