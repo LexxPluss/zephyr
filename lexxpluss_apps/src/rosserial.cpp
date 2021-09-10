@@ -14,16 +14,11 @@ namespace {
 
 class ros_led {
 public:
-    void init(ros::NodeHandle &nh) {
-        nh.subscribe(sub);
-    }
-    void poll() {
-        if (updated) {
-            updated = false;
-        }
-    }
+    void init(ros::NodeHandle &nh) {nh.subscribe(sub);}
+    void poll() {}
 private:
     void callback(const std_msgs::String& req) {
+        msg_ros2led message;
         if      (strcmp(req.data, "emergency_stop")  == 0) message.pattern = msg_ros2led::EMERGENCY_STOP;
         else if (strcmp(req.data, "amr_mode")        == 0) message.pattern = msg_ros2led::AMR_MODE;
         else if (strcmp(req.data, "agv_mode")        == 0) message.pattern = msg_ros2led::AGV_MODE;
@@ -37,11 +32,10 @@ private:
         else if (strcmp(req.data, "both_winker")     == 0) message.pattern = msg_ros2led::BOTH_WINKER;
         else if (strcmp(req.data, "move_actuator")   == 0) message.pattern = msg_ros2led::MOVE_ACTUATOR;
         else                                               message.pattern = msg_ros2led::NONE;
-        updated = true;
+        while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
+            k_msgq_purge(&msgq_ros2led);
     }
     ros::Subscriber<std_msgs::String, ros_led> sub{"/body_control/led", &ros_led::callback, this};
-    msg_ros2led message{msg_ros2led::NONE};
-    bool updated{false};
 };
 
 class ros_pgv {
