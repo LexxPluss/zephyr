@@ -14,6 +14,46 @@
 		zephyr,dtcm = &dtcm;
 		zephyr,can-primary = &can1;
 	};
+
+	uss0: mb1604-0 {
+		compatible = "maxbotix,maxbotix";
+		label = "MB1604_0";
+		trig-gpios = <&gpiok 0 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpiok 1 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
+	uss1: mb1604-1 {
+		compatible = "maxbotix,maxbotix";
+		label = "MB1604_1";
+		trig-gpios = <&gpiok 2 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpiog 2 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
+	uss2: mb1604-2 {
+		compatible = "maxbotix,maxbotix";
+		label = "MB1604_2";
+		trig-gpios = <&gpiog 3 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpiog 4 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
+	uss3: mb1604-3 {
+		compatible = "maxbotix,maxbotix";
+		label = "MB1604_3";
+		trig-gpios = <&gpiog 5 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+
+	uss4: mb1604-4 {
+		compatible = "maxbotix,maxbotix";
+		label = "MB1604_4";
+		trig-gpios = <&gpiog 7 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpiog 8 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
 };
 
 &clk_hse {
@@ -76,7 +116,7 @@
 	led_strip1: ws2812@1 {
 		compatible = "worldsemi,ws2812-spi";
 		label = "WS2812_1";
-		reg = <0>;
+		reg = <1>;
 		spi-max-frequency = <8000000>;
 		chain-length = <40>;
 		spi-one-frame = <0x7c>;
