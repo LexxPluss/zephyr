@@ -4,6 +4,7 @@
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/String.h"
 #include "std_msgs/UInt16MultiArray.h"
+#include "lexxauto_msgs/ultrasound.h"
 #include "pf_pgv100/pgv_dir_msg.h"
 #include "pf_pgv100/pgv_scan_data.h"
 #include "message.hpp"
@@ -153,6 +154,24 @@ private:
     ros::Subscriber<std_msgs::UInt16MultiArray, ros_actuator> sub_duty{"request_actuator_power", &ros_actuator::callback_duty, this};
 };
 
+class ros_uss {
+public:
+    void init(ros::NodeHandle &nh) {nh.advertise(pub);}
+    void poll() {
+        msg_uss2ros message;
+        if (k_msgq_get(&msgq_uss2ros, &message, K_NO_WAIT) == 0) {
+            msg.sensor0 = message.front_left;
+            msg.sensor1 = message.left;
+            msg.sensor2 = message.right;
+            msg.sensor3 = message.back;
+            pub.publish(&msg);
+        }
+    }
+private:
+    lexxauto_msgs::ultrasound msg;
+    ros::Publisher pub{"ultrasound_measured_data", &msg};
+};
+
 class rosserial {
 public:
     int setup() {
@@ -160,6 +179,7 @@ public:
         led.init(nh);
         pgv.init(nh);
         actuator.init(nh);
+        uss.init(nh);
         return 0;
     }
     void loop() {
@@ -167,6 +187,7 @@ public:
         led.poll();
         pgv.poll();
         actuator.poll();
+        uss.poll();
         k_msleep(1);
     }
 private:
@@ -174,6 +195,7 @@ private:
     ros_led led;
     ros_pgv pgv;
     ros_actuator actuator;
+    ros_uss uss;
 };
 
 LEXX_THREAD_RUNNER(rosserial);
