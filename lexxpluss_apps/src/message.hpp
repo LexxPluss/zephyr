@@ -48,8 +48,14 @@ struct msg_actuator2ros {
     uint16_t current[3];
 } __attribute__((aligned(4)));
 
+struct msg_uss2ros {
+    uint32_t front_left, front_right;
+    uint32_t left, right, back;
+} __attribute__((aligned(4)));
+
 extern k_msgq msgq_ros2led;
 extern k_msgq msgq_pgv2ros;
 extern k_msgq msgq_ros2pgv;
 extern k_msgq msgq_actuator2ros;
 extern k_msgq msgq_ros2actuator;
+extern k_msgq msgq_uss2ros;
