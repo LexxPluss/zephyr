@@ -1,10 +1,10 @@
 /dts-v1/;
-#include <st/f7/stm32f765Xg.dtsi>
-#include <st/f7/stm32f765b(g-i)tx-pinctrl.dtsi>
+#include <st/f7/stm32f769Xg.dtsi>
+#include <st/f7/stm32f769b(g-i)tx-pinctrl.dtsi>
 
 / {
 	model = "LexxPluss Main Control Unit board";
-	compatible = "st,stm32f765bg-lexxpluss";
+	compatible = "st,stm32f769bg-lexxpluss";
 
 	chosen {
 		zephyr,console = &usart3;
