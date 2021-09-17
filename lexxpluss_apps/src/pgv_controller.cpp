@@ -24,7 +24,7 @@ public:
     int init() {
         ring_buf_init(&rxbuf.rb, sizeof rxbuf.buf, rxbuf.buf);
         ring_buf_init(&txbuf.rb, sizeof txbuf.buf, txbuf.buf);
-        dev = device_get_binding("UART_@@");
+        dev = device_get_binding("UART_6");
         if (dev != nullptr) {
             uart_config config{
                 .baudrate = 115200,
