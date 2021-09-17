@@ -198,6 +198,6 @@ private:
     ros_uss uss;
 };
 
-LEXX_THREAD_RUNNER(rosserial);
+LEXX_THREAD_RUNNER_DELAYED(rosserial, 1500);
 
 }
