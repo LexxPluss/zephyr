@@ -102,8 +102,8 @@
 	status = "okay";
 };
 
-&spi2 {
-	pinctrl-0 = <&spi2_mosi_pi3>;
+&spi4 {
+	pinctrl-0 = <&spi4_mosi_pe6>;
 	status = "okay";
 	led_strip0: ws2812@0 {
 		compatible = "worldsemi,ws2812-spi";
