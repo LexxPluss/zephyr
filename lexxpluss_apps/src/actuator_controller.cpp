@@ -1,6 +1,7 @@
 #include <device.h>
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
+#include "adc_reader.hpp"
 #include "message.hpp"
 #include "thread_runner.hpp"
 
@@ -140,15 +141,19 @@ public:
                 control_duty(msg->data);
         }
     }
-    void poll_encoder(int32_t data[3]) {
+    void get_encoder(int32_t data[3]) {
         int16_t d[3];
         helper.get_count(d);
         for (auto i = 0; i < 3; ++i)
             data[i] = d[i];
     }
-    void poll_current(uint16_t data[3]) {
-        for (auto i = 0; i < 3; ++i)
-            data[i] = 0;
+    void get_current(uint16_t data[3]) const {
+        data[0] = adc_reader::get(adc_reader::INDEX_ACTUATOR_0);
+        data[1] = adc_reader::get(adc_reader::INDEX_ACTUATOR_1);
+        data[2] = adc_reader::get(adc_reader::INDEX_ACTUATOR_2);
+    }
+    uint16_t get_connect() const {
+        return adc_reader::get(adc_reader::INDEX_CONNECT_CART);
     }
 private:
     void control_cwccw(const uint16_t data[3]) {
@@ -186,8 +191,9 @@ public:
         if (dt_ms > 100) {
             prev_cycle = now_cycle;
             msg_actuator2ros actuator2ros;
-            impl.poll_encoder(actuator2ros.encoder_count);
-            impl.poll_current(actuator2ros.current);
+            impl.get_encoder(actuator2ros.encoder_count);
+            impl.get_current(actuator2ros.current);
+            actuator2ros.connect = impl.get_connect();
             while (k_msgq_put(&msgq_actuator2ros, &actuator2ros, K_NO_WAIT) != 0)
                 k_msgq_purge(&msgq_actuator2ros);
         }
