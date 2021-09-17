@@ -18,15 +18,15 @@
 	uss0: mb1604-0 {
 		compatible = "maxbotix,maxbotix";
 		label = "MB1604_0";
-		trig-gpios = <&gpiok 0 GPIO_ACTIVE_HIGH>;
-		echo-gpios = <&gpiok 1 GPIO_ACTIVE_HIGH>;
+		trig-gpios = <&gpiod 13 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
 
 	uss1: mb1604-1 {
 		compatible = "maxbotix,maxbotix";
 		label = "MB1604_1";
-		trig-gpios = <&gpiok 2 GPIO_ACTIVE_HIGH>;
+		trig-gpios = <&gpiod 15 GPIO_ACTIVE_HIGH>;
 		echo-gpios = <&gpiog 2 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
