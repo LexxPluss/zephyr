@@ -46,6 +46,7 @@ struct msg_ros2actuator {
 struct msg_actuator2ros {
     int32_t encoder_count[3];
     uint16_t current[3];
+    uint16_t connect;
 } __attribute__((aligned(4)));
 
 struct msg_uss2ros {
