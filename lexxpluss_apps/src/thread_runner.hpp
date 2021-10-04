@@ -20,3 +20,5 @@ struct thread_runner {
         }
     }
 };
+
+// vim: set expandtab shiftwidth=4:

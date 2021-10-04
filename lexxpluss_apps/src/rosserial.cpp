@@ -201,3 +201,5 @@ private:
 LEXX_THREAD_RUNNER_DELAYED(rosserial, 1500);
 
 }
+
+// vim: set expandtab shiftwidth=4:

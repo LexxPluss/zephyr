@@ -69,3 +69,5 @@ uint16_t adc_reader::get(int index)
 {
     return impl.get(index);
 }
+
+// vim: set expandtab shiftwidth=4:
