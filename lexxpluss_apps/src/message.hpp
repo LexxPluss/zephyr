@@ -19,6 +19,7 @@ struct msg_ros2led {
     static constexpr uint32_t RIGHT_WINKER = 13;
     static constexpr uint32_t BOTH_WINKER = 14;
     static constexpr uint32_t MOVE_ACTUATOR = 15;
+    static constexpr uint32_t SHOWTIME = 10000;
 } __attribute__((aligned(4)));
 
 struct msg_pgv2ros {

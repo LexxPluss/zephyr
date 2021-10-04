@@ -38,6 +38,7 @@ public:
         case msg_ros2led::RIGHT_WINKER:    fill_blink_sequence(sequence, LED_RIGHT); break;
         case msg_ros2led::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
         case msg_ros2led::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
+        case msg_ros2led::SHOWTIME:        fill_toggle(showtime); break;
         }
         ++counter;
     }
@@ -109,6 +110,22 @@ private:
         if (counter > 25)
             counter = 0;
     }
+    void fill_toggle(const led_rgb &color) {
+        static constexpr uint32_t thres = 10;
+        if (counter >= thres * 2)
+            counter = 0;
+        led_rgb c0, c1;
+        if (counter < thres)
+            c0 = color, c1 = black;
+        else
+            c0 = black, c1 = color;
+        for (uint32_t i = 0, end = PIXELS / 8; i < end; i += 8) {
+            for (uint32_t j = 0; j < 4; ++j)
+                pixeldata[LED_LEFT][i + j] = pixeldata[LED_RIGHT][i + j] = c0;
+            for (uint32_t j = 4; j < 8; ++j)
+                pixeldata[LED_LEFT][i + j] = pixeldata[LED_RIGHT][i + j] = c1;
+        }
+    }
     led_rgb fader(const led_rgb &color, int percent) const {
         led_rgb color_;
         color_.r = color.r * percent / 100;
@@ -142,7 +159,7 @@ private:
     led_rgb pixeldata[LED_NUM][PIXELS];
     uint32_t counter{0};
     static const led_rgb emergency_stop, amr_mode, agv_mode, mission_pause, path_blocked, manual_drive;
-    static const led_rgb dock_mode, waiting_for_job, orange, sequence, move_actuator, black;
+    static const led_rgb dock_mode, waiting_for_job, orange, sequence, move_actuator, showtime, black;
 };
 const led_rgb led_controller_impl::emergency_stop {.r = 0x80, .g = 0x00, .b = 0x00};
 const led_rgb led_controller_impl::amr_mode       {.r = 0x00, .g = 0x80, .b = 0x80};
@@ -155,22 +172,24 @@ const led_rgb led_controller_impl::waiting_for_job{.r = 0xff, .g = 0xff, .b = 0x
 const led_rgb led_controller_impl::orange         {.r = 0xff, .g = 0xa5, .b = 0x00};
 const led_rgb led_controller_impl::sequence       {.r = 0x90, .g = 0x20, .b = 0x00};
 const led_rgb led_controller_impl::move_actuator  {.r = 0x45, .g = 0xff, .b = 0x00};
+const led_rgb led_controller_impl::showtime       {.r = 0x0f, .g = 0xb6, .b = 0xc8};
 const led_rgb led_controller_impl::black          {.r = 0x00, .g = 0x00, .b = 0x00};
 
 class led_controller {
 public:
     int setup() {
         k_msgq_init(&msgq_ros2led, msgq_ros2led_buffer, sizeof (msg_ros2led), 10);
+        message.pattern = msg_ros2led::SHOWTIME;
         return impl.init();
     }
     void loop() {
-        msg_ros2led message;
         if (k_msgq_get(&msgq_ros2led, &message, K_MSEC(led_controller_impl::DELAY_MS)) == 0)
             impl.reset();
         impl.poll(message.pattern);
     }
 private:
     led_controller_impl impl;
+    msg_ros2led message;
 };
 
 LEXX_THREAD_RUNNER(led_controller);
