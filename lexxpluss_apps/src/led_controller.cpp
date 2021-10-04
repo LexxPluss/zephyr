@@ -32,8 +32,8 @@ public:
         case msg_ros2led::MISSION_PAUSE:   fill(mission_pause); break;
         case msg_ros2led::PATH_BLOCKED:    fill(path_blocked); break;
         case msg_ros2led::MANUAL_DRIVE:    fill(manual_drive); break;
-        case msg_ros2led::CHARGING:        break;
-        case msg_ros2led::WAITING_FOR_JOB: break;
+        case msg_ros2led::CHARGING:        fill_rainbow(); break;
+        case msg_ros2led::WAITING_FOR_JOB: fill_fade(waiting_for_job); break;
         case msg_ros2led::LEFT_WINKER:     fill_blink_sequence(sequence, LED_LEFT); break;
         case msg_ros2led::RIGHT_WINKER:    fill_blink_sequence(sequence, LED_RIGHT); break;
         case msg_ros2led::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
@@ -67,6 +67,30 @@ private:
             counter = 0;
         }
     }
+    void fill_rainbow(uint32_t select = LED_BOTH) {
+        if (counter % 3 == 0)
+            return;
+        if (counter > 256 * 3)
+            counter = 0;
+        if (select == LED_BOTH) {
+            for (uint32_t i = 0; i < PIXELS; ++i)
+                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = wheel(((i * 256 / PIXELS) + counter / 3) & 255);
+        } else {
+            for (uint32_t i = 0; i < PIXELS; ++i)
+                pixeldata[select][i] = wheel(((i * 256 / PIXELS) + counter / 3) & 255);
+        }
+    }
+    void fill_fade(const led_rgb &color) {
+        static constexpr uint32_t thres = 130;
+        if (counter >= thres * 2)
+            counter = 0;
+        int percent;
+        if (counter < thres)
+            percent = counter * 100 / thres;
+        else
+            percent = (thres * 2 - counter) * 100 / thres;
+        fill(fader(color, percent));
+    }
     void fill_blink_sequence(const led_rgb &color, uint32_t select = LED_BOTH) {
         uint32_t n{0};
         if (counter >= 8 && counter < 25) {
@@ -84,6 +108,33 @@ private:
         }
         if (counter > 25)
             counter = 0;
+    }
+    led_rgb fader(const led_rgb &color, int percent) const {
+        led_rgb color_;
+        color_.r = color.r * percent / 100;
+        color_.g = color.g * percent / 100;
+        color_.b = color.b * percent / 100;
+        return color_;
+    }
+    led_rgb wheel(uint32_t wheelpos) const {
+        static constexpr uint32_t thres = 256 / 3;
+        led_rgb color;
+        if (wheelpos < thres) {
+            color.r = wheelpos * 3;
+            color.g = 255 - wheelpos * 3;
+            color.b = 0;
+        } else if (wheelpos < thres * 2) {
+            wheelpos -= thres;
+            color.r = 255 - wheelpos * 3;
+            color.g = 0;
+            color.b = wheelpos * 3;
+        } else {
+            wheelpos -= thres * 2;
+            color.r = 0;
+            color.g = wheelpos * 3;
+            color.b = 255 - wheelpos * 3;
+        }
+        return color;
     }
     static constexpr uint32_t PIXELS{DT_PROP(DT_NODELABEL(led_strip0), chain_length)};
     static constexpr uint32_t LED_LEFT{0}, LED_RIGHT{1}, LED_BOTH{2}, LED_NUM{2};
