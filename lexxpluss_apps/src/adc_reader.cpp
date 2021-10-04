@@ -10,7 +10,7 @@ LEXX_THREAD_RUNNER(adc_reader);
 class adc_reader_impl {
 public:
     int init() {
-        dev = device_get_binding("UART_6");
+        dev = device_get_binding("ADC_1");
         if (dev != nullptr) {
             static constexpr uint8_t ch[NUM_CHANNELS]{0, 1, 10, 11, 12, 13};
             adc_channel_cfg channel_cfg{
