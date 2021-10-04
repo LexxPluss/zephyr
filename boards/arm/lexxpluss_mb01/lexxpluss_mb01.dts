@@ -134,3 +134,51 @@
 	pinctrl-0 = <&adc1_in0_pa0 &adc1_in1_pa1 &adc1_in10_pc0 &adc1_in11_pc1 &adc1_in12_pc2 &adc1_in13_pc3>;
 	status = "okay";
 };
+
+&timers1 {
+	status = "okay";
+	pwm1: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim1_ch1_pe9 &tim1_ch2_pe11>;
+	};
+};
+
+&timers5 {
+	status = "okay";
+	pwm5: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim5_ch1_ph10 &tim5_ch2_ph11>;
+	};
+};
+
+&timers8 {
+	status = "okay";
+	pwm8: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim8_ch1_pc6 &tim8_ch2_pc7>;
+	};
+};
+
+&timers2 {
+	status = "okay";
+	pwm2: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim2_ch1_pa15>;
+	};
+};
+
+&timers4 {
+	status = "okay";
+	pwm4: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim4_ch1_pb6>;
+	};
+};
+
+&timers9 {
+	status = "okay";
+	pwm9: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim9_ch1_pa2>;
+	};
+};
