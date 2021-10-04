@@ -13,3 +13,5 @@ public:
     static constexpr int INDEX_CONNECT_CART{5};
 private:
 };
+
+// vim: set expandtab shiftwidth=4:

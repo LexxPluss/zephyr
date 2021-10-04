@@ -78,3 +78,5 @@ private:
 namespace ros {
 typedef NodeHandle_<rosserial_hardware_zephyr> NodeHandle;
 }
+
+// vim: set expandtab shiftwidth=4:

@@ -6,3 +6,5 @@ void main()
         k_msleep(100);
     }
 }
+
+// vim: set expandtab shiftwidth=4:
