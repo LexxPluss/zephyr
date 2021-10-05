@@ -8,7 +8,6 @@
 
 class rosserial_hardware_zephyr {
 public:
-    rosserial_hardware_zephyr() {}
     void init(const char *name) {
         ring_buf_init(&ringbuf.rx, sizeof ringbuf.rbuf, ringbuf.rbuf);
         ring_buf_init(&ringbuf.tx, sizeof ringbuf.tbuf, ringbuf.tbuf);
@@ -70,13 +69,15 @@ private:
     }
     struct {
         ring_buf rx, tx;
-        uint8_t rbuf[256], tbuf[256];
+        uint8_t rbuf[512], tbuf[512];
     } ringbuf;
     const device* uart_dev{nullptr};
 };
 
 namespace ros {
+
 typedef NodeHandle_<rosserial_hardware_zephyr> NodeHandle;
+
 }
 
 // vim: set expandtab shiftwidth=4:

@@ -2,7 +2,7 @@
 #include <devicetree.h>
 #include <drivers/led_strip.h>
 #include "message.hpp"
-#include "thread_runner.hpp"
+#include "led_controller.hpp"
 
 k_msgq msgq_ros2led;
 
@@ -13,6 +13,8 @@ char __aligned(4) msgq_ros2led_buffer[10 * sizeof (msg_ros2led)];
 class led_controller_impl {
 public:
     int init() {
+        k_msgq_init(&msgq_ros2led, msgq_ros2led_buffer, sizeof (msg_ros2led), 10);
+        message.pattern = msg_ros2led::SHOWTIME;
         dev[LED_LEFT] = device_get_binding("WS2812_0");
         dev[LED_RIGHT] = device_get_binding("WS2812_1");
         if (dev[LED_LEFT] == nullptr || dev[LED_RIGHT] == nullptr)
@@ -21,7 +23,14 @@ public:
         update();
         return 0;
     }
-    void reset() {counter = 0;}
+    void run() {
+        while (true) {
+            if (k_msgq_get(&msgq_ros2led, &message, K_MSEC(DELAY_MS)) == 0)
+                counter = 0;
+            poll(message.pattern);
+        }
+    }
+private:
     void poll(uint32_t pattern) {
         switch (pattern) {
         default:
@@ -42,8 +51,6 @@ public:
         }
         ++counter;
     }
-    static constexpr uint32_t DELAY_MS{50};
-private:
     void update() {
         led_strip_update_rgb(dev[LED_LEFT], pixeldata[LED_LEFT], PIXELS);
         led_strip_update_rgb(dev[LED_RIGHT], pixeldata[LED_RIGHT], PIXELS);
@@ -153,14 +160,16 @@ private:
         }
         return color;
     }
+    msg_ros2led message;
     static constexpr uint32_t PIXELS{DT_PROP(DT_NODELABEL(led_strip0), chain_length)};
     static constexpr uint32_t LED_LEFT{0}, LED_RIGHT{1}, LED_BOTH{2}, LED_NUM{2};
+    static constexpr uint32_t DELAY_MS{50};
     const device *dev[LED_NUM]{nullptr, nullptr};
     led_rgb pixeldata[LED_NUM][PIXELS];
     uint32_t counter{0};
     static const led_rgb emergency_stop, amr_mode, agv_mode, mission_pause, path_blocked, manual_drive;
     static const led_rgb dock_mode, waiting_for_job, orange, sequence, move_actuator, showtime, black;
-};
+} impl;
 const led_rgb led_controller_impl::emergency_stop {.r = 0x80, .g = 0x00, .b = 0x00};
 const led_rgb led_controller_impl::amr_mode       {.r = 0x00, .g = 0x80, .b = 0x80};
 const led_rgb led_controller_impl::agv_mode       {.r = 0x45, .g = 0xff, .b = 0x00};
@@ -175,25 +184,18 @@ const led_rgb led_controller_impl::move_actuator  {.r = 0x45, .g = 0xff, .b = 0x
 const led_rgb led_controller_impl::showtime       {.r = 0x0f, .g = 0xb6, .b = 0xc8};
 const led_rgb led_controller_impl::black          {.r = 0x00, .g = 0x00, .b = 0x00};
 
-class led_controller {
-public:
-    int setup() {
-        k_msgq_init(&msgq_ros2led, msgq_ros2led_buffer, sizeof (msg_ros2led), 10);
-        message.pattern = msg_ros2led::SHOWTIME;
-        return impl.init();
-    }
-    void loop() {
-        if (k_msgq_get(&msgq_ros2led, &message, K_MSEC(led_controller_impl::DELAY_MS)) == 0)
-            impl.reset();
-        impl.poll(message.pattern);
-    }
-private:
-    led_controller_impl impl;
-    msg_ros2led message;
-};
-
-LEXX_THREAD_RUNNER(led_controller);
-
 }
+
+void led_controller::init()
+{
+    impl.init();
+}
+
+void led_controller::run(void *p1, void *p2, void *p3)
+{
+    impl.run();
+}
+
+k_thread led_controller::thread;
 
 // vim: set expandtab shiftwidth=4:
