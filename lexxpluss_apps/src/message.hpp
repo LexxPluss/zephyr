@@ -55,11 +55,20 @@ struct msg_uss2ros {
     uint32_t left, right, back;
 } __attribute__((aligned(4)));
 
+struct msg_imu2ros {
+    float accel[3];
+    float gyro[3];
+    float delta_ang[3];
+    float delta_vel[3];
+    float temp;
+} __attribute__((aligned(4)));
+
 extern k_msgq msgq_ros2led;
 extern k_msgq msgq_pgv2ros;
 extern k_msgq msgq_ros2pgv;
 extern k_msgq msgq_actuator2ros;
 extern k_msgq msgq_ros2actuator;
 extern k_msgq msgq_uss2ros;
+extern k_msgq msgq_imu2ros;
 
 // vim: set expandtab shiftwidth=4:
