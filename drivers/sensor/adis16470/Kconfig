@@ -1,0 +1,9 @@
+menuconfig ADIS16470
+	bool "ADIS16470 Driver"
+	depends on SPI
+	help
+	  Enable driver for ADIS16470.
+
+if ADIS16470
+endif #ADIS16470
+
