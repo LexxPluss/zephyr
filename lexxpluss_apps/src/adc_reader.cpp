@@ -1,11 +1,8 @@
 #include <device.h>
 #include <drivers/adc.h>
 #include "adc_reader.hpp"
-#include "thread_runner.hpp"
 
 namespace {
-
-LEXX_THREAD_RUNNER(adc_reader);
 
 class adc_reader_impl {
 public:
@@ -27,8 +24,11 @@ public:
         }
         return dev == nullptr ? -1 : 0;
     }
-    void poll() {
-        adc_read(dev, &sequence);
+    void run() {
+        while (true) {
+            adc_read(dev, &sequence);
+            k_msleep(50);
+        }
     }
     uint16_t get(int index) {
         int32_t ref = adc_ref_internal(dev);
@@ -54,20 +54,21 @@ private:
 
 }
 
-int adc_reader::setup()
+void adc_reader::init()
 {
-    return impl.init();
+    impl.init();
 }
 
-void adc_reader::loop()
+void adc_reader::run(void *p1, void *p2, void *p3)
 {
-    impl.poll();
-    k_msleep(50);
+    impl.run();
 }
 
 uint16_t adc_reader::get(int index)
 {
     return impl.get(index);
 }
+
+k_thread adc_reader::thread;
 
 // vim: set expandtab shiftwidth=4:

@@ -2,7 +2,7 @@
 #include <device.h>
 #include <drivers/sensor.h>
 #include "message.hpp"
-#include "thread_runner.hpp"
+#include "uss_controller.hpp"
 
 k_msgq msgq_uss2ros;
 
@@ -58,32 +58,44 @@ K_THREAD_DEFINE(tid_fetcher_1, 2048, &uss_fetcher::runner, &fetcher[1], "MB1604_
 K_THREAD_DEFINE(tid_fetcher_2, 2048, &uss_fetcher::runner, &fetcher[2], "MB1604_3", nullptr, 6, K_FP_REGS, 1000);
 K_THREAD_DEFINE(tid_fetcher_3, 2048, &uss_fetcher::runner, &fetcher[3], "MB1604_4", nullptr, 6, K_FP_REGS, 1000);
 
-class uss_controller {
+class uss_controller_impl {
 public:
-    int setup() {
+    int init() {
         k_msgq_init(&msgq_uss2ros, msgq_uss2ros_buffer, sizeof (msg_uss2ros), 10);
         return 0;
     }
-    void loop() {
-        msg_uss2ros message;
-        uint32_t distance[2];
-        fetcher[0].get_distance(distance);
-        message.front_left = distance[0];
-        message.front_right = distance[1];
-        fetcher[1].get_distance(distance);
-        message.left = distance[0];
-        fetcher[2].get_distance(distance);
-        message.right = distance[0];
-        fetcher[3].get_distance(distance);
-        message.back = distance[0];
-        while (k_msgq_put(&msgq_uss2ros, &message, K_NO_WAIT) != 0)
-            k_msgq_purge(&msgq_uss2ros);
-        k_msleep(50);
+    void run() {
+        while (true) {
+            msg_uss2ros message;
+            uint32_t distance[2];
+            fetcher[0].get_distance(distance);
+            message.front_left = distance[0];
+            message.front_right = distance[1];
+            fetcher[1].get_distance(distance);
+            message.left = distance[0];
+            fetcher[2].get_distance(distance);
+            message.right = distance[0];
+            fetcher[3].get_distance(distance);
+            message.back = distance[0];
+            while (k_msgq_put(&msgq_uss2ros, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_uss2ros);
+            k_msleep(50);
+        }
     }
-};
-
-LEXX_THREAD_RUNNER(uss_controller);
+} impl;
 
 }
+
+void uss_controller::init()
+{
+    impl.init();
+}
+
+void uss_controller::run(void *p1, void *p2, void *p3)
+{
+    impl.run();
+}
+
+k_thread uss_controller::thread;
 
 /* vim: set expandtab shiftwidth=4: */

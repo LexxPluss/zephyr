@@ -3,7 +3,7 @@
 #include <drivers/uart.h>
 #include <sys/ring_buffer.h>
 #include "message.hpp"
-#include "thread_runner.hpp"
+#include "pgv_controller.hpp"
 
 k_msgq msgq_pgv2ros;
 k_msgq msgq_ros2pgv;
@@ -15,13 +15,9 @@ char __aligned(4) msgq_ros2pgv_buffer[10 * sizeof (msg_ros2pgv)];
 
 class pgv_controller_impl {
 public:
-    enum class DIR {
-        NOLANE,
-        RIGHT,
-        LEFT,
-        STRAIGHT
-    };
     int init() {
+        k_msgq_init(&msgq_pgv2ros, msgq_pgv2ros_buffer, sizeof (msg_pgv2ros), 10);
+        k_msgq_init(&msgq_ros2pgv, msgq_ros2pgv_buffer, sizeof (msg_ros2pgv), 10);
         ring_buf_init(&rxbuf.rb, sizeof rxbuf.buf, rxbuf.buf);
         ring_buf_init(&txbuf.rb, sizeof txbuf.buf, txbuf.buf);
         dev = device_get_binding("UART_6");
@@ -42,6 +38,32 @@ public:
         }
         return dev == nullptr ? -1 : 0;
     }
+    void run() {
+        while (true) {
+            msg_pgv2ros pgv2ros;
+            if (get_position(pgv2ros)) {
+                while (k_msgq_put(&msgq_pgv2ros, &pgv2ros, K_NO_WAIT) != 0)
+                    k_msgq_purge(&msgq_pgv2ros);
+            }
+            msg_ros2pgv ros2pgv;
+            if (k_msgq_get(&msgq_ros2pgv, &ros2pgv, K_NO_WAIT) == 0) {
+                switch (ros2pgv.dir_command) {
+                    case 0: set_direction_decision(DIR::NOLANE);   break;
+                    case 1: set_direction_decision(DIR::RIGHT);    break;
+                    case 2: set_direction_decision(DIR::LEFT);     break;
+                    case 3: set_direction_decision(DIR::STRAIGHT); break;
+                }
+            }
+            k_msleep(30);
+        }
+    }
+private:
+    enum class DIR {
+        NOLANE,
+        RIGHT,
+        LEFT,
+        STRAIGHT
+    };
     bool get_position(msg_pgv2ros &data) {
         ring_buf_reset(&rxbuf.rb);
         uint8_t req[2];
@@ -71,7 +93,6 @@ public:
         req[1] = ~req[0];
         send(req, sizeof req);
     }
-private:
     void decode(const uint8_t *buf, msg_pgv2ros &data) const {
         data.f.cc2 =  (buf[ 0] & 0x40) != 0;
         data.addr  =  (buf[ 0] & 0x30) >> 4;
@@ -186,38 +207,20 @@ private:
         uint32_t buf[256 / sizeof (uint32_t)];
     } txbuf, rxbuf;
     const device *dev = nullptr;
-};
-
-class pgv_controller {
-public:
-    int setup() {
-        k_msgq_init(&msgq_pgv2ros, msgq_pgv2ros_buffer, sizeof (msg_pgv2ros), 10);
-        k_msgq_init(&msgq_ros2pgv, msgq_ros2pgv_buffer, sizeof (msg_ros2pgv), 10);
-        return impl.init();
-    }
-    void loop() {
-        msg_pgv2ros pgv2ros;
-        if (impl.get_position(pgv2ros)) {
-            while (k_msgq_put(&msgq_pgv2ros, &pgv2ros, K_NO_WAIT) != 0)
-                k_msgq_purge(&msgq_pgv2ros);
-        }
-        msg_ros2pgv ros2pgv;
-        if (k_msgq_get(&msgq_ros2pgv, &ros2pgv, K_NO_WAIT) == 0) {
-            switch (ros2pgv.dir_command) {
-            case 0: impl.set_direction_decision(pgv_controller_impl::DIR::NOLANE);   break;
-            case 1: impl.set_direction_decision(pgv_controller_impl::DIR::RIGHT);    break;
-            case 2: impl.set_direction_decision(pgv_controller_impl::DIR::LEFT);     break;
-            case 3: impl.set_direction_decision(pgv_controller_impl::DIR::STRAIGHT); break;
-            }
-        }
-        k_msleep(30);
-    }
-private:
-    pgv_controller_impl impl;
-};
-
-LEXX_THREAD_RUNNER(pgv_controller);
+} impl;
 
 }
+
+void pgv_controller::init()
+{
+    impl.init();
+}
+
+void pgv_controller::run(void *p1, void *p2, void *p3)
+{
+    impl.run();
+}
+
+k_thread pgv_controller::thread;
 
 /* vim: set expandtab shiftwidth=4: */

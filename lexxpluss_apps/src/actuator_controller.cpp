@@ -3,7 +3,7 @@
 #include <drivers/pwm.h>
 #include "adc_reader.hpp"
 #include "message.hpp"
-#include "thread_runner.hpp"
+#include "actuator_controller.hpp"
 
 k_msgq msgq_actuator2ros;
 k_msgq msgq_ros2actuator;
@@ -118,6 +118,9 @@ private:
 class actuator_controller_impl {
 public:
     int init() {
+        k_msgq_init(&msgq_actuator2ros, msgq_actuator2ros_buffer, sizeof (msg_actuator2ros), 10);
+        k_msgq_init(&msgq_ros2actuator, msgq_ros2actuator_buffer, sizeof (msg_ros2actuator), 10);
+        prev_cycle = k_cycle_get_32();
         dev_pwm[0] = device_get_binding("PWM_2");
         dev_pwm[1] = device_get_binding("PWM_4");
         dev_pwm[2] = device_get_binding("PWM_9");
@@ -133,6 +136,26 @@ public:
         gpio_pin_configure(dev_dir, 5, GPIO_OUTPUT | GPIO_ACTIVE_HIGH);
         return helper.init();
     }
+    void run() {
+        while (true) {
+            msg_ros2actuator ros2actuator;
+            if (k_msgq_get(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) == 0)
+                handle(&ros2actuator);
+            uint32_t now_cycle = k_cycle_get_32();
+            uint32_t dt_ms = k_cyc_to_ms_near32(now_cycle - prev_cycle);
+            if (dt_ms > 100) {
+                prev_cycle = now_cycle;
+                msg_actuator2ros actuator2ros;
+                get_encoder(actuator2ros.encoder_count);
+                get_current(actuator2ros.current);
+                actuator2ros.connect = get_connect();
+                while (k_msgq_put(&msgq_actuator2ros, &actuator2ros, K_NO_WAIT) != 0)
+                    k_msgq_purge(&msgq_actuator2ros);
+            }
+            k_msleep(10);
+        }
+    }
+private:
     void handle(const msg_ros2actuator *msg) {
         if (msg != nullptr) {
             if (msg->type == msg_ros2actuator::CWCCW)
@@ -155,7 +178,6 @@ public:
     uint16_t get_connect() const {
         return adc_reader::get(adc_reader::INDEX_CONNECT_CART);
     }
-private:
     void control_cwccw(const uint16_t data[3]) {
         gpio_pin_set(dev_dir, 3, data[0] == 0 ? 0 : 1);
         gpio_pin_set(dev_dir, 4, data[1] == 0 ? 0 : 1);
@@ -168,44 +190,25 @@ private:
         }
     }
     timer_hal_helper helper;
+    uint32_t prev_cycle{0};
     static constexpr uint32_t ACTUATOR_NUM{3};
     const device *dev_pwm[ACTUATOR_NUM], *dev_dir;
     static constexpr uint32_t CONTROL_HZ{5000};
     static constexpr uint32_t CONTROL_PERIOD_NS{1000000000ULL / CONTROL_HZ};
-};
-
-class actuator_controller {
-public:
-    int setup() {
-        k_msgq_init(&msgq_actuator2ros, msgq_actuator2ros_buffer, sizeof (msg_actuator2ros), 10);
-        k_msgq_init(&msgq_ros2actuator, msgq_ros2actuator_buffer, sizeof (msg_ros2actuator), 10);
-        prev_cycle = k_cycle_get_32();
-        return impl.init();
-    }
-    void loop() {
-        msg_ros2actuator ros2actuator;
-        if (k_msgq_get(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) == 0)
-            impl.handle(&ros2actuator);
-        uint32_t now_cycle = k_cycle_get_32();
-        uint32_t dt_ms = k_cyc_to_ms_near32(now_cycle - prev_cycle);
-        if (dt_ms > 100) {
-            prev_cycle = now_cycle;
-            msg_actuator2ros actuator2ros;
-            impl.get_encoder(actuator2ros.encoder_count);
-            impl.get_current(actuator2ros.current);
-            actuator2ros.connect = impl.get_connect();
-            while (k_msgq_put(&msgq_actuator2ros, &actuator2ros, K_NO_WAIT) != 0)
-                k_msgq_purge(&msgq_actuator2ros);
-        }
-        k_msleep(10);
-    }
-private:
-    actuator_controller_impl impl;
-    uint32_t prev_cycle{0};
-};
-
-LEXX_THREAD_RUNNER(actuator_controller);
+} impl;
 
 }
+
+void actuator_controller::init()
+{
+    impl.init();
+}
+
+void actuator_controller::run(void *p1, void *p2, void *p3)
+{
+    impl.run();
+}
+
+k_thread actuator_controller::thread;
 
 /* vim: set expandtab shiftwidth=4: */

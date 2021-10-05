@@ -9,7 +9,7 @@
 #include "pf_pgv100/pgv_scan_data.h"
 #include "message.hpp"
 #include "rosserial_hardware_zephyr.hpp"
-#include "thread_runner.hpp"
+#include "rosserial.hpp"
 
 namespace {
 
@@ -172,9 +172,9 @@ private:
     ros::Publisher pub{"ultrasound_measured_data", &msg};
 };
 
-class rosserial {
+class rosserial_impl {
 public:
-    int setup() {
+    int init() {
         nh.initNode(const_cast<char*>("UART_1"));
         led.init(nh);
         pgv.init(nh);
@@ -182,13 +182,15 @@ public:
         uss.init(nh);
         return 0;
     }
-    void loop() {
-        nh.spinOnce();
-        led.poll();
-        pgv.poll();
-        actuator.poll();
-        uss.poll();
-        k_msleep(1);
+    void run() {
+        while (true) {
+            nh.spinOnce();
+            led.poll();
+            pgv.poll();
+            actuator.poll();
+            uss.poll();
+            k_msleep(1);
+        }
     }
 private:
     ros::NodeHandle nh;
@@ -196,10 +198,20 @@ private:
     ros_pgv pgv;
     ros_actuator actuator;
     ros_uss uss;
-};
-
-LEXX_THREAD_RUNNER_DELAYED(rosserial, 1500);
+} impl;
 
 }
+
+void rosserial::init()
+{
+    impl.init();
+}
+
+void rosserial::run(void *p1, void *p2, void *p3)
+{
+    impl.run();
+}
+
+k_thread rosserial::thread;
 
 // vim: set expandtab shiftwidth=4:
