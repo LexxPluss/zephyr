@@ -8,6 +8,39 @@
 k_msgq msgq_actuator2ros;
 k_msgq msgq_ros2actuator;
 
+void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim_encoder)
+{
+    GPIO_InitTypeDef GPIO_InitStruct{0};
+    if(htim_encoder->Instance==TIM1) {
+        __HAL_RCC_TIM1_CLK_ENABLE();
+        __HAL_RCC_GPIOE_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_11;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+        GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+        HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+    } else if(htim_encoder->Instance==TIM5) {
+        __HAL_RCC_TIM5_CLK_ENABLE();
+        __HAL_RCC_GPIOH_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+        GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
+        HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+    } else if(htim_encoder->Instance==TIM8) {
+        __HAL_RCC_TIM8_CLK_ENABLE();
+        __HAL_RCC_GPIOC_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+        GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
+        HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    }
+}
+
 namespace {
 
 char __aligned(4) msgq_actuator2ros_buffer[10 * sizeof (msg_actuator2ros)];
