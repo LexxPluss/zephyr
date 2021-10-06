@@ -179,11 +179,11 @@ public:
     void poll() {
         msg_uss2ros message;
         if (k_msgq_get(&msgq_uss2ros, &message, K_NO_WAIT) == 0) {
-            msg.data[0] = message.front_left;
-            msg.data[1] = message.front_right;
-            msg.data[2] = message.left;
-            msg.data[3] = message.right;
-            msg.data[3] = message.back;
+            msg.data[0] = message.front_left * 1e-3f;
+            msg.data[1] = message.front_right * 1e-3f;
+            msg.data[2] = message.left * 1e-3f;
+            msg.data[3] = message.right * 1e-3f;
+            msg.data[3] = message.back * 1e-3f;
             pub.publish(&msg);
         }
     }
