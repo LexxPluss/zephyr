@@ -171,19 +171,25 @@ private:
 
 class ros_uss {
 public:
-    void init(ros::NodeHandle &nh) {nh.advertise(pub);}
+    void init(ros::NodeHandle &nh) {
+        nh.advertise(pub);
+        msg.data = msg_data;
+        msg.data_length = sizeof msg_data / sizeof msg_data[0];
+    }
     void poll() {
         msg_uss2ros message;
         if (k_msgq_get(&msgq_uss2ros, &message, K_NO_WAIT) == 0) {
-            msg.sensor0 = message.front_left;
-            msg.sensor1 = message.left;
-            msg.sensor2 = message.right;
-            msg.sensor3 = message.back;
+            msg.data[0] = message.front_left;
+            msg.data[1] = message.front_right;
+            msg.data[2] = message.left;
+            msg.data[3] = message.right;
+            msg.data[3] = message.back;
             pub.publish(&msg);
         }
     }
 private:
-    lexxauto_msgs::ultrasound msg;
+    std_msgs::Float64MultiArray msg;
+    float msg_data[5];
     ros::Publisher pub{"ultrasound_measured_data", &msg};
 };
 
