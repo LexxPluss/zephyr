@@ -17,10 +17,13 @@ namespace {
 
 class ros_led {
 public:
-    void init(ros::NodeHandle &nh) {nh.subscribe(sub);}
+    void init(ros::NodeHandle &nh) {
+        nh.subscribe(sub_string);
+        nh.subscribe(sub_direct);
+    }
     void poll() {}
 private:
-    void callback(const std_msgs::String& req) {
+    void callback_string(const std_msgs::String& req) {
         msg_ros2led message;
         if      (strcmp(req.data, "emergency_stop")  == 0) message.pattern = msg_ros2led::EMERGENCY_STOP;
         else if (strcmp(req.data, "amr_mode")        == 0) message.pattern = msg_ros2led::AMR_MODE;
@@ -38,7 +41,17 @@ private:
         while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&msgq_ros2led);
     }
-    ros::Subscriber<std_msgs::String, ros_led> sub{"/body_control/led", &ros_led::callback, this};
+    void callback_direct(const std_msgs::String& req) {
+        msg_ros2led message;
+        message.pattern = msg_ros2led::RGB;
+        message.rgb[0] = 0x00;
+        message.rgb[1] = 0x00;
+        message.rgb[2] = 0x00;
+        while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
+            k_msgq_purge(&msgq_ros2led);
+    }
+    ros::Subscriber<std_msgs::String, ros_led> sub_string{"/body_control/led", &ros_led::callback_string, this};
+    ros::Subscriber<std_msgs::String/*@@*/, ros_led> sub_direct{"/body_control/led_direct", &ros_led::callback_direct, this};
 };
 
 class ros_pgv {
