@@ -27,12 +27,12 @@ public:
         while (true) {
             if (k_msgq_get(&msgq_ros2led, &message, K_MSEC(DELAY_MS)) == 0)
                 counter = 0;
-            poll(message.pattern);
+            poll();
         }
     }
 private:
-    void poll(uint32_t pattern) {
-        switch (pattern) {
+    void poll() {
+        switch (message.pattern) {
         default:
         case msg_ros2led::NONE:            fill(black); break;
         case msg_ros2led::EMERGENCY_STOP:  fill_strobe(emergency_stop, 10, 50, 1000); break;
@@ -48,6 +48,8 @@ private:
         case msg_ros2led::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
         case msg_ros2led::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
         case msg_ros2led::SHOWTIME:        fill_toggle(showtime); break;
+        case msg_ros2led::RGB:             fill(led_rgb{.r = message.rgb[0], .g = message.rgb[1], .b = message.rgb[2]}); break;
+        update();
         }
         ++counter;
     }

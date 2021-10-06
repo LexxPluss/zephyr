@@ -6,6 +6,7 @@
 
 struct msg_ros2led {
     uint32_t pattern;
+    uint8_t rgb[3];
     static constexpr uint32_t NONE = 0;
     static constexpr uint32_t EMERGENCY_STOP = 1;
     static constexpr uint32_t AMR_MODE = 2;
@@ -20,6 +21,7 @@ struct msg_ros2led {
     static constexpr uint32_t BOTH_WINKER = 14;
     static constexpr uint32_t MOVE_ACTUATOR = 15;
     static constexpr uint32_t SHOWTIME = 10000;
+    static constexpr uint32_t RGB = 10001;
 } __attribute__((aligned(4)));
 
 struct msg_pgv2ros {
