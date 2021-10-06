@@ -203,12 +203,12 @@ private:
         for (auto i = 0; i < 3; ++i)
             data[i] = d[i];
     }
-    void get_current(uint16_t data[3]) const {
+    void get_current(int32_t data[3]) const {
         data[0] = adc_reader::get(adc_reader::INDEX_ACTUATOR_0);
         data[1] = adc_reader::get(adc_reader::INDEX_ACTUATOR_1);
         data[2] = adc_reader::get(adc_reader::INDEX_ACTUATOR_2);
     }
-    uint16_t get_connect() const {
+    int32_t get_connect() const {
         return adc_reader::get(adc_reader::INDEX_CONNECT_CART);
     }
     void control_cwccw(const uint16_t data[3]) {
