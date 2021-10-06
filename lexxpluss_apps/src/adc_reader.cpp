@@ -30,7 +30,7 @@ public:
             k_msleep(50);
         }
     }
-    uint16_t get(int index) {
+    int32_t get(int index) {
         int32_t ref = adc_ref_internal(dev);
         int32_t value = buffer[index];
         if (ref > 0)
@@ -64,7 +64,7 @@ void adc_reader::run(void *p1, void *p2, void *p3)
     impl.run();
 }
 
-uint16_t adc_reader::get(int index)
+int32_t adc_reader::get(int index)
 {
     return impl.get(index);
 }
