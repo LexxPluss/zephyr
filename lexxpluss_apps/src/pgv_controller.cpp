@@ -34,11 +34,16 @@ public:
             uart_irq_tx_disable(dev);
             uart_irq_callback_user_data_set(dev, uart_isr_trampoline, this);
             uart_irq_rx_enable(dev);
-            set_direction_decision(DIR::STRAIGHT);
         }
         return dev == nullptr ? -1 : 0;
     }
     void run() {
+        for (int i = 0; i < 30; ++i) {
+            ring_buf_reset(&rxbuf.rb);
+            set_direction_decision(DIR::STRAIGHT);
+            if (wait_data(3))
+                break;
+        }
         while (true) {
             msg_pgv2ros pgv2ros;
             if (get_position(pgv2ros)) {
@@ -51,8 +56,10 @@ public:
                     case 0: set_direction_decision(DIR::NOLANE);   break;
                     case 1: set_direction_decision(DIR::RIGHT);    break;
                     case 2: set_direction_decision(DIR::LEFT);     break;
+                    default:
                     case 3: set_direction_decision(DIR::STRAIGHT); break;
                 }
+                wait_data(3);
             }
             k_msleep(30);
         }
@@ -172,8 +179,8 @@ private:
             if (rb_count(&rxbuf.rb) >= length)
                 return true;
             k_msleep(10);
-            return false;
         }
+        return false;
     }
     int recv(uint8_t *buf, uint32_t length) {
         return ring_buf_get(&rxbuf.rb, buf, length);
