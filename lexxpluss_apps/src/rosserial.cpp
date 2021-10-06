@@ -2,6 +2,7 @@
 #include <cstdio>
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/ByteMultiArray.h"
+#include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/String.h"
 #include "std_msgs/UInt16MultiArray.h"
@@ -211,6 +212,27 @@ private:
     imupub velocity{"adis16470_vel_data"};
 };
 
+class ros_tof {
+public:
+    void init(ros::NodeHandle &nh) {
+        nh.advertise(pub);
+        msg.data = msg_data;
+        msg.data_length = sizeof msg_data / sizeof msg_data[0];
+    }
+    void poll() {
+        msg_tof2ros message;
+        if (k_msgq_get(&msgq_tof2ros, &message, K_NO_WAIT) == 0) {
+            msg.data[0] = message.left * 1e-3f;
+            msg.data[1] = message.right * 1e-3f;
+            pub.publish(&msg);
+        }
+    }
+private:
+    std_msgs::Float64MultiArray msg;
+    float msg_data[2];
+    ros::Publisher pub{"downward", &msg};
+};
+
 class rosserial_impl {
 public:
     int init() {
@@ -220,6 +242,7 @@ public:
         actuator.init(nh);
         uss.init(nh);
         imu.init(nh);
+        tof.init(nh);
         return 0;
     }
     void run() {
@@ -230,6 +253,7 @@ public:
             actuator.poll();
             uss.poll();
             imu.poll();
+            tof.poll();
             k_msleep(1);
         }
     }
@@ -240,6 +264,7 @@ private:
     ros_actuator actuator;
     ros_uss uss;
     ros_imu imu;
+    ros_tof tof;
 } impl;
 
 }

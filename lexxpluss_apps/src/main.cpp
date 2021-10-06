@@ -5,6 +5,7 @@
 #include "led_controller.hpp"
 #include "pgv_controller.hpp"
 #include "rosserial.hpp"
+#include "tof_controller.hpp"
 #include "uss_controller.hpp"
 
 namespace {
@@ -15,6 +16,7 @@ K_THREAD_STACK_DEFINE(imu_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(led_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(pgv_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(rosserial_stack, 2048);
+K_THREAD_STACK_DEFINE(tof_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(uss_controller_stack, 2048);
 
 #define RUN(name) \
@@ -31,12 +33,14 @@ void main()
     led_controller::init();
     pgv_controller::init();
     rosserial::init();
+    tof_controller::init();
     uss_controller::init();
     RUN(actuator_controller);
     RUN(adc_reader);
     RUN(imu_controller);
     RUN(led_controller);
     RUN(pgv_controller);
+    RUN(tof_controller);
     RUN(uss_controller);
     RUN(rosserial); // The rosserial thread will be started last.
     while (true) {
