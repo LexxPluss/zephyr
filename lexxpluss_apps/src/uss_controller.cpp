@@ -1,7 +1,6 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/sensor.h>
-#include "message.hpp"
 #include "uss_controller.hpp"
 
 k_msgq msgq_uss2ros;

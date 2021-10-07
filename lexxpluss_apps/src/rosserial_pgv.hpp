@@ -5,7 +5,9 @@
 #include "ros/node_handle.h"
 #include "pf_pgv100/pgv_dir_msg.h"
 #include "pf_pgv100/pgv_scan_data.h"
-#include "message.hpp"
+#include "pgv_controller.hpp"
+
+#define M_PI 3.14159265358979323846
 
 class ros_pgv {
 public:

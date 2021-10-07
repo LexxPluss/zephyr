@@ -3,7 +3,7 @@
 #include <zephyr.h>
 #include "ros/node_handle.h"
 #include "std_msgs/String.h"
-#include "message.hpp"
+#include "led_controller.hpp"
 
 class ros_led {
 public:

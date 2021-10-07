@@ -3,7 +3,7 @@
 #include <zephyr.h>
 #include "ros/node_handle.h"
 #include "geometry_msgs/Vector3.h"
-#include "message.hpp"
+#include "imu_controller.hpp"
 
 class ros_imu {
 public:

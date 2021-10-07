@@ -3,7 +3,7 @@
 #include <zephyr.h>
 #include "ros/node_handle.h"
 #include "std_msgs/Float64MultiArray.h"
-#include "message.hpp"
+#include "uss_controller.hpp"
 
 class ros_uss {
 public:

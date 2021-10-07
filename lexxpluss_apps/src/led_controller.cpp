@@ -1,7 +1,6 @@
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/led_strip.h>
-#include "message.hpp"
 #include "led_controller.hpp"
 
 k_msgq msgq_ros2led;

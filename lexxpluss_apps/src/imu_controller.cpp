@@ -1,7 +1,6 @@
 #include <device.h>
 #include <drivers/sensor.h>
 #include <logging/log.h>
-#include "message.hpp"
 #include "imu_controller.hpp"
 
 k_msgq msgq_imu2ros;
