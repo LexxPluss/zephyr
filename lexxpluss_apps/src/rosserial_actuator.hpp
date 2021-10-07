@@ -5,7 +5,7 @@
 #include "std_msgs/ByteMultiArray.h"
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/UInt16MultiArray.h"
-#include "message.hpp"
+#include "actuator_controller.hpp"
 
 class ros_actuator {
 public:

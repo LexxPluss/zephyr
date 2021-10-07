@@ -1,5 +1,4 @@
 #include <zephyr.h>
-#include "message.hpp"
 #include "adc_reader.hpp"
 #include "tof_controller.hpp"
 

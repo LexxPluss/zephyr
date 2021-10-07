@@ -2,7 +2,6 @@
 #include <device.h>
 #include <drivers/uart.h>
 #include <sys/ring_buffer.h>
-#include "message.hpp"
 #include "pgv_controller.hpp"
 
 k_msgq msgq_pgv2ros;

@@ -2,7 +2,6 @@
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
 #include "adc_reader.hpp"
-#include "message.hpp"
 #include "actuator_controller.hpp"
 
 k_msgq msgq_actuator2ros;
