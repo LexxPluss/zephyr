@@ -14,6 +14,7 @@ char __aligned(4) msgq_imu2ros_buffer[10 * sizeof (msg_imu2ros)];
 class imu_controller_impl {
 public:
     int init() {
+        k_msgq_init(&msgq_imu2ros, msgq_imu2ros_buffer, sizeof (msg_imu2ros), 10);
         dev = device_get_binding("ADIS16470");
         if (dev == nullptr)
             return -1;
@@ -24,7 +25,6 @@ public:
             message.delta_vel[i] = 0;
         }
         message.temp = 0;
-        k_msgq_init(&msgq_imu2ros, msgq_imu2ros_buffer, sizeof (msg_imu2ros), 10);
         LOG_INF("IMU controller for LexxPluss board. (%p)", dev);
         return 0;
     }
