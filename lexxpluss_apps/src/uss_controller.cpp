@@ -11,16 +11,6 @@ char __aligned(4) msgq_uss2ros_buffer[10 * sizeof (msg_uss2ros)];
 
 class uss_fetcher {
 public:
-    static void runner(void *p1, void *p2, void *p3) {
-        uss_fetcher *self = static_cast<uss_fetcher*>(p1);
-        if (self->init(static_cast<const char*>(p2), static_cast<const char*>(p3)) == 0)
-            self->run();
-    }
-    void get_distance(uint32_t distance[2]) const {
-        distance[0] = this->distance[0];
-        distance[1] = this->distance[1];
-    }
-private:
     int init(const char *label0, const char *label1) {
         dev[0] = device_get_binding(label0);
         if (dev[0] == nullptr)
@@ -32,6 +22,16 @@ private:
         }
         return 0;
     }
+    void get_distance(uint32_t distance[2]) const {
+        distance[0] = this->distance[0];
+        distance[1] = this->distance[1];
+    }
+    static void runner(void *p1, void *p2, void *p3) {
+        uss_fetcher *self = static_cast<uss_fetcher*>(p1);
+        self->run();
+    }
+    k_thread thread;
+private:
     void run() {
         while (true) {
             if (sensor_sample_fetch_chan(dev[0], SENSOR_CHAN_ALL) == 0) {
@@ -52,18 +52,31 @@ private:
     const device *dev[2]{nullptr, nullptr};
     uint32_t distance[2]{0, 0};
 } fetcher[4];
-K_THREAD_DEFINE(tid_fetcher_0, 2048, &uss_fetcher::runner, &fetcher[0], "MB1604_0", "MB1604_1", 6, K_FP_REGS, 1000);
-K_THREAD_DEFINE(tid_fetcher_1, 2048, &uss_fetcher::runner, &fetcher[1], "MB1604_2", nullptr, 6, K_FP_REGS, 1000);
-K_THREAD_DEFINE(tid_fetcher_2, 2048, &uss_fetcher::runner, &fetcher[2], "MB1604_3", nullptr, 6, K_FP_REGS, 1000);
-K_THREAD_DEFINE(tid_fetcher_3, 2048, &uss_fetcher::runner, &fetcher[3], "MB1604_4", nullptr, 6, K_FP_REGS, 1000);
+
+K_THREAD_STACK_DEFINE(fetcher_stack_0, 2048);
+K_THREAD_STACK_DEFINE(fetcher_stack_1, 2048);
+K_THREAD_STACK_DEFINE(fetcher_stack_2, 2048);
+K_THREAD_STACK_DEFINE(fetcher_stack_3, 2048);
+
+#define RUN(x) \
+    k_thread_create(&fetcher[x].thread, fetcher_stack_##x, K_THREAD_STACK_SIZEOF(fetcher_stack_##x), \
+                    &uss_fetcher::runner, &fetcher[x], nullptr, nullptr, 6, K_FP_REGS, K_NO_WAIT);
 
 class uss_controller_impl {
 public:
     int init() {
         k_msgq_init(&msgq_uss2ros, msgq_uss2ros_buffer, sizeof (msg_uss2ros), 10);
+        fetcher[0].init("MB1604_0", "MB1604_1");
+        fetcher[1].init("MB1604_2", nullptr);
+        fetcher[2].init("MB1604_3", nullptr);
+        fetcher[3].init("MB1604_4", nullptr);
         return 0;
     }
     void run() {
+        RUN(0);
+        RUN(1);
+        RUN(2);
+        RUN(3);
         while (true) {
             msg_uss2ros message;
             uint32_t distance[2];
