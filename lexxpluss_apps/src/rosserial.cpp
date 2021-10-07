@@ -13,34 +13,34 @@ class rosserial_impl {
 public:
     int init() {
         nh.initNode(const_cast<char*>("UART_1"));
+        actuator.init(nh);
+        imu.init(nh);
         led.init(nh);
         pgv.init(nh);
-        actuator.init(nh);
-        uss.init(nh);
-        imu.init(nh);
         tof.init(nh);
+        uss.init(nh);
         return 0;
     }
     void run() {
         while (true) {
             nh.spinOnce();
+            actuator.poll();
+            imu.poll();
             led.poll();
             pgv.poll();
-            actuator.poll();
-            uss.poll();
-            imu.poll();
             tof.poll();
+            uss.poll();
             k_msleep(1);
         }
     }
 private:
     ros::NodeHandle nh;
+    ros_actuator actuator;
+    ros_imu imu;
     ros_led led;
     ros_pgv pgv;
-    ros_actuator actuator;
-    ros_uss uss;
-    ros_imu imu;
     ros_tof tof;
+    ros_uss uss;
 } impl;
 
 }
