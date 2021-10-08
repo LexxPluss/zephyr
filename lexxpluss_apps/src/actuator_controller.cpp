@@ -180,7 +180,7 @@ public:
                 msg_actuator2ros actuator2ros;
                 get_encoder(actuator2ros.encoder_count);
                 get_current(actuator2ros.current);
-                actuator2ros.connect = get_connect();
+                actuator2ros.connect = get_trolley();
                 while (k_msgq_put(&msgq_actuator2ros, &actuator2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_actuator2ros);
             }
@@ -207,8 +207,8 @@ private:
         data[1] = adc_reader::get(adc_reader::INDEX_ACTUATOR_1);
         data[2] = adc_reader::get(adc_reader::INDEX_ACTUATOR_2);
     }
-    int32_t get_connect() const {
-        return adc_reader::get(adc_reader::INDEX_CONNECT_CART);
+    int32_t get_trolley() const {
+        return adc_reader::get(adc_reader::INDEX_TROLLEY);
     }
     void control_cwccw(const uint16_t data[3]) const {
         gpio_pin_set(dev_dir, 3, data[0] == 0 ? 0 : 1);
