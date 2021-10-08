@@ -12,7 +12,7 @@ struct adc_reader {
     static constexpr int INDEX_ACTUATOR_0{2};
     static constexpr int INDEX_ACTUATOR_1{3};
     static constexpr int INDEX_ACTUATOR_2{4};
-    static constexpr int INDEX_CONNECT_CART{5};
+    static constexpr int INDEX_TROLLEY{5};
 };
 
 // vim: set expandtab shiftwidth=4:
