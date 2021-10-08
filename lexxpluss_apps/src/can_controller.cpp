@@ -21,27 +21,19 @@ public:
         k_msgq_init(&msgq_bmu2ros, msgq_bmu2ros_buffer, sizeof (msg_bmu2ros), 10);
         k_msgq_init(&msgq_powerboard2ros, msgq_powerboard2ros_buffer, sizeof (msg_powerboard2ros), 10);
         dev = device_get_binding("CAN_1");
-        prev_cycle_bmu = prev_cycle_power = k_cycle_get_32();
         return dev == nullptr ? -1 : 0;
     }
     void run() {
         setup_can_filter();
         while (true) {
             zcan_frame frame;
-            if (k_msgq_get(&msgq_bmu, &frame, K_NO_WAIT) == 0)
+            if (k_msgq_get(&msgq_bmu, &frame, K_NO_WAIT) == 0) {
                 handler_bmu(frame);
-            if (k_msgq_get(&msgq_power, &frame, K_NO_WAIT) == 0)
-                handler_power(frame);
-            uint32_t now_cycle = k_cycle_get_32();
-            uint32_t dt_ms = k_cyc_to_ms_near32(now_cycle - prev_cycle_bmu);
-            if (dt_ms > 500) {
-                prev_cycle_bmu = now_cycle;
                 while (k_msgq_put(&msgq_bmu2ros, &bmu2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_bmu2ros);
             }
-            dt_ms = k_cyc_to_ms_near32(now_cycle - prev_cycle_power);
-            if (dt_ms > 100) {
-                prev_cycle_power = now_cycle;
+            if (k_msgq_get(&msgq_power, &frame, K_NO_WAIT) == 0) {
+                handler_power(frame);
                 while (k_msgq_put(&msgq_powerboard2ros, &powerboard2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_powerboard2ros);
             }
@@ -159,7 +151,6 @@ private:
     }
     msg_bmu2ros bmu2ros{0};
     msg_powerboard2ros powerboard2ros{0};
-    uint32_t prev_cycle_bmu{0}, prev_cycle_power{0};
     const device *dev{nullptr};
 } impl;
 
