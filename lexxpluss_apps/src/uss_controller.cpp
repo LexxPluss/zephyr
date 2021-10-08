@@ -64,7 +64,7 @@ K_THREAD_STACK_DEFINE(fetcher_stack_3, 2048);
 
 class uss_controller_impl {
 public:
-    int init() {
+    int init() const {
         k_msgq_init(&msgq_uss2ros, msgq_uss2ros_buffer, sizeof (msg_uss2ros), 10);
         fetcher[0].init("MB1604_0", "MB1604_1");
         fetcher[1].init("MB1604_2", nullptr);
@@ -72,7 +72,7 @@ public:
         fetcher[3].init("MB1604_4", nullptr);
         return 0;
     }
-    void run() {
+    void run() const {
         RUN(0);
         RUN(1);
         RUN(2);

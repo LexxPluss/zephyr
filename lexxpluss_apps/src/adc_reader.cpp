@@ -24,13 +24,13 @@ public:
         }
         return dev == nullptr ? -1 : 0;
     }
-    void run() {
+    void run() const {
         while (true) {
             adc_read(dev, &sequence);
             k_msleep(50);
         }
     }
-    int32_t get(int index) {
+    int32_t get(int index) const {
         int32_t ref = adc_ref_internal(dev);
         int32_t value = buffer[index];
         if (ref > 0)
