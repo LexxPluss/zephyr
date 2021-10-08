@@ -24,22 +24,7 @@ public:
         return dev == nullptr ? -1 : 0;
     }
     void run() {
-        static const zcan_filter filter_bmu{
-            .id = 0x100,
-            .rtr = CAN_DATAFRAME,
-            .id_type = CAN_STANDARD_IDENTIFIER,
-            .id_mask = 0x7e0,
-            .rtr_mask = 1
-        };
-        static const zcan_filter filter_power{
-            .id = 1000,
-            .rtr = CAN_DATAFRAME,
-            .id_type = CAN_STANDARD_IDENTIFIER,
-            .id_mask = CAN_STD_ID_MASK,
-            .rtr_mask = 1
-        };
-        can_attach_msgq(dev, &msgq_bmu, &filter_bmu);
-        can_attach_msgq(dev, &msgq_power, &filter_power);
+        setup_can_filter();
         while (true) {
             zcan_frame frame;
             if (k_msgq_get(&msgq_bmu, &frame, K_NO_WAIT) == 0)
@@ -63,6 +48,24 @@ public:
         }
     }
 private:
+    void setup_can_filter() const {
+        static const zcan_filter filter_bmu{
+            .id = 0x100,
+            .rtr = CAN_DATAFRAME,
+            .id_type = CAN_STANDARD_IDENTIFIER,
+            .id_mask = 0x7e0,
+            .rtr_mask = 1
+        };
+        static const zcan_filter filter_power{
+            .id = 1000,
+            .rtr = CAN_DATAFRAME,
+            .id_type = CAN_STANDARD_IDENTIFIER,
+            .id_mask = CAN_STD_ID_MASK,
+            .rtr_mask = 1
+        };
+        can_attach_msgq(dev, &msgq_bmu, &filter_bmu);
+        can_attach_msgq(dev, &msgq_power, &filter_power);
+    }
     void handler_bmu(zcan_frame &frame) {
         if (frame.id == 0x100) {
             bmu2ros.mod_status1 = frame.data[0];
