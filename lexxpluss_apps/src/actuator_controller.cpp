@@ -188,7 +188,7 @@ public:
         }
     }
 private:
-    void handle(const msg_ros2actuator *msg) {
+    void handle(const msg_ros2actuator *msg) const {
         if (msg != nullptr) {
             if (msg->type == msg_ros2actuator::CWCCW)
                 control_cwccw(msg->data);
@@ -196,7 +196,7 @@ private:
                 control_duty(msg->data);
         }
     }
-    void get_encoder(int32_t data[3]) {
+    void get_encoder(int32_t data[3]) const {
         int16_t d[3];
         helper.get_count(d);
         for (auto i = 0; i < 3; ++i)
@@ -210,12 +210,12 @@ private:
     int32_t get_connect() const {
         return adc_reader::get(adc_reader::INDEX_CONNECT_CART);
     }
-    void control_cwccw(const uint16_t data[3]) {
+    void control_cwccw(const uint16_t data[3]) const {
         gpio_pin_set(dev_dir, 3, data[0] == 0 ? 0 : 1);
         gpio_pin_set(dev_dir, 4, data[1] == 0 ? 0 : 1);
         gpio_pin_set(dev_dir, 5, data[2] == 0 ? 0 : 1);
     }
-    void control_duty(const uint16_t data[3]) {
+    void control_duty(const uint16_t data[3]) const {
         for (auto i = 0; i < 3; ++i) {
             uint32_t pulse_ns = data[i] * CONTROL_PERIOD_NS / 65535;
             pwm_pin_set_nsec(dev_pwm[i], 1, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);

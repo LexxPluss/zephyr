@@ -10,11 +10,11 @@ char __aligned(4) msgq_tof2ros_buffer[10 * sizeof (msg_tof2ros)];
 
 class tof_controller_impl {
 public:
-    int init() {
+    int init() const {
         k_msgq_init(&msgq_tof2ros, msgq_tof2ros_buffer, sizeof (msg_tof2ros), 10);
         return 0;
     }
-    void run() {
+    void run() const {
         while (true) {
             msg_tof2ros message;
             message.left = adc_reader::get(adc_reader::INDEX_DOWNWARD_L);
