@@ -7,7 +7,7 @@
 k_msgq msgq_actuator2ros;
 k_msgq msgq_ros2actuator;
 
-void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim_encoder)
+extern "C" void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim_encoder)
 {
     GPIO_InitTypeDef GPIO_InitStruct{0};
     if(htim_encoder->Instance==TIM1) {
