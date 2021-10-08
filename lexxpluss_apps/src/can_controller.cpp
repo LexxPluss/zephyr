@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/can.h>
+#include "adc_reader.hpp"
 #include "can_controller.hpp"
 
 k_msgq msgq_bmu2ros;
@@ -44,6 +45,7 @@ public:
                 while (k_msgq_put(&msgq_powerboard2ros, &powerboard2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_powerboard2ros);
             }
+            send_trolley_status();
             k_msleep(30);
         }
     }
@@ -135,6 +137,25 @@ private:
         powerboard2ros.charge_connector_temp[0] = frame.data[5];
         powerboard2ros.charge_connector_temp[1] = frame.data[6];
         powerboard2ros.board_temp = frame.data[7];
+    }
+    void send_trolley_status() const {
+        zcan_frame frame{
+            .id = 1001,
+            .rtr = CAN_DATAFRAME,
+            .id_type = CAN_STANDARD_IDENTIFIER,
+            .dlc = 1,
+            .data{get_trolley_status()}
+        };
+        can_send(dev, &frame, K_MSEC(100), nullptr, nullptr);
+    }
+    uint8_t get_trolley_status() const {
+        int32_t mv = adc_reader::get(adc_reader::INDEX_TROLLEY);
+        if (mv > 3300 * 3 / 4)
+            return 2;
+        else if (mv > 3300 / 4)
+            return 1;
+        else
+            return 0;
     }
     msg_bmu2ros bmu2ros{0};
     msg_powerboard2ros powerboard2ros{0};
