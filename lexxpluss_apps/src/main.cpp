@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include "actuator_controller.hpp"
 #include "adc_reader.hpp"
+#include "can_controller.hpp"
 #include "imu_controller.hpp"
 #include "led_controller.hpp"
 #include "pgv_controller.hpp"
@@ -12,6 +13,7 @@ namespace {
 
 K_THREAD_STACK_DEFINE(actuator_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(adc_reader_stack, 2048);
+K_THREAD_STACK_DEFINE(can_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(imu_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(led_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(pgv_controller_stack, 2048);
@@ -29,6 +31,7 @@ void main()
 {
     actuator_controller::init();
     adc_reader::init();
+    can_controller::init();
     imu_controller::init();
     led_controller::init();
     pgv_controller::init();
@@ -37,6 +40,7 @@ void main()
     uss_controller::init();
     RUN(actuator_controller);
     RUN(adc_reader);
+    RUN(can_controller);
     RUN(imu_controller);
     RUN(led_controller);
     RUN(pgv_controller);
