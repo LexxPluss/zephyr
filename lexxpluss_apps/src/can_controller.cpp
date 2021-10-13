@@ -24,6 +24,8 @@ public:
         return dev == nullptr ? -1 : 0;
     }
     void run() {
+        if (!device_is_ready(dev))
+            return;
         setup_can_filter();
         while (true) {
             zcan_frame frame;

@@ -33,6 +33,8 @@ public:
     k_thread thread;
 private:
     void run() {
+        if (!device_is_ready(dev[0]))
+            return;
         while (true) {
             if (sensor_sample_fetch_chan(dev[0], SENSOR_CHAN_ALL) == 0) {
                 sensor_value v;

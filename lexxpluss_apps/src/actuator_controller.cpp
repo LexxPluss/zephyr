@@ -169,6 +169,12 @@ public:
         return helper.init();
     }
     void run() {
+        for (const auto& i : dev_pwm) {
+            if (!device_is_ready(i))
+                return;
+        }
+        if (!device_is_ready(dev_dir))
+            return;
         while (true) {
             msg_ros2actuator ros2actuator;
             if (k_msgq_get(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) == 0)
