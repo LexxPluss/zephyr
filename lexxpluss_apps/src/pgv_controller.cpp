@@ -37,6 +37,8 @@ public:
         return dev == nullptr ? -1 : 0;
     }
     void run() {
+        if (!device_is_ready(dev))
+            return;
         for (int i = 0; i < 30; ++i) {
             ring_buf_reset(&rxbuf.rb);
             set_direction_decision(DIR::STRAIGHT);

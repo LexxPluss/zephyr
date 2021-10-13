@@ -29,6 +29,8 @@ public:
         return 0;
     }
     void run() {
+        if (!device_is_ready(dev))
+            return;
         while (true) {
             if (sensor_sample_fetch_chan(dev, SENSOR_CHAN_ALL) == 0) {
                 message.accel[0] = get_sensor_value_as_float(SENSOR_CHAN_ACCEL_X);

@@ -23,6 +23,8 @@ public:
         return 0;
     }
     void run() {
+        if (!device_is_ready(dev[LED_LEFT]) || !device_is_ready(dev[LED_RIGHT]))
+            return;
         while (true) {
             if (k_msgq_get(&msgq_ros2led, &message, K_MSEC(DELAY_MS)) == 0)
                 counter = 0;

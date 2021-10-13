@@ -25,6 +25,8 @@ public:
         return dev == nullptr ? -1 : 0;
     }
     void run() const {
+        if (!device_is_ready(dev))
+            return;
         while (true) {
             adc_read(dev, &sequence);
             k_msleep(50);
