@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <device.h>
+#include <drivers/gpio.h>
 #include <drivers/uart.h>
 #include <sys/ring_buffer.h>
 #include "pgv_controller.hpp"
@@ -19,8 +20,8 @@ public:
         k_msgq_init(&msgq_ros2pgv, msgq_ros2pgv_buffer, sizeof (msg_ros2pgv), 10);
         ring_buf_init(&rxbuf.rb, sizeof rxbuf.buf, rxbuf.buf);
         ring_buf_init(&txbuf.rb, sizeof txbuf.buf, txbuf.buf);
-        dev = device_get_binding("UART_6");
-        if (dev != nullptr) {
+        dev_485 = device_get_binding("UART_6");
+        if (dev_485 != nullptr) {
             uart_config config{
                 .baudrate{115200},
                 .parity{UART_CFG_PARITY_EVEN},
@@ -28,16 +29,21 @@ public:
                 .data_bits{UART_CFG_DATA_BITS_8},
                 .flow_ctrl{UART_CFG_FLOW_CTRL_NONE}
             };
-            uart_configure(dev, &config);
-            uart_irq_rx_disable(dev);
-            uart_irq_tx_disable(dev);
-            uart_irq_callback_user_data_set(dev, uart_isr_trampoline, this);
-            uart_irq_rx_enable(dev);
+            uart_configure(dev_485, &config);
+            uart_irq_rx_disable(dev_485);
+            uart_irq_tx_disable(dev_485);
+            uart_irq_callback_user_data_set(dev_485, uart_isr_trampoline, this);
+            uart_irq_rx_enable(dev_485);
         }
-        return dev == nullptr ? -1 : 0;
+        dev_en = device_get_binding("GPIOG");
+        if (dev_en != nullptr) {
+            gpio_pin_configure(dev_en, 10, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+            gpio_pin_configure(dev_en, 11, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+        }
+        return dev_485 == nullptr || dev_en == nullptr ? -1 : 0;
     }
     void run() {
-        if (!device_is_ready(dev))
+        if (!device_is_ready(dev_485))
             return;
         for (int i{0}; i < 30; ++i) {
             ring_buf_reset(&rxbuf.rb);
@@ -166,13 +172,20 @@ private:
         return rb->tail - rb->head;
     }
     void send(const uint8_t *buf, uint32_t length) {
-        if (dev != nullptr) {
+        if (dev_485 != nullptr) {
+            gpio_pin_set(dev_en, 10, 1);
+            gpio_pin_set(dev_en, 11, 1);
             while (length > 0) {
+                tx_done = false;
                 uint32_t n{ring_buf_put(&txbuf.rb, buf, length)};
-                uart_irq_tx_enable(dev);
+                uart_irq_tx_enable(dev_485);
                 buf += n;
                 length -= n;
             }
+            while (!tx_done)
+                k_usleep(50);
+            gpio_pin_set(dev_en, 10, 0);
+            gpio_pin_set(dev_en, 11, 0);
         }
     }
     bool wait_data(uint32_t length) const {
@@ -190,19 +203,21 @@ private:
         return !ring_buf_is_empty(&rxbuf.rb);
     }
     void uart_isr() {
-        while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
+        while (uart_irq_update(dev_485) && uart_irq_is_pending(dev_485)) {
             uint8_t buf[64];
-            if (uart_irq_rx_ready(dev)) {
+            if (uart_irq_rx_ready(dev_485)) {
                 int n{uart_fifo_read(dev_485, buf, sizeof buf)};
                 if (n > 0)
                     ring_buf_put(&rxbuf.rb, buf, n);
             }
-            if (uart_irq_tx_ready(dev)) {
+            if (uart_irq_tx_ready(dev_485)) {
                 uint32_t n{ring_buf_get(&txbuf.rb, buf, 1)};
-                if (n > 0)
-                    uart_fifo_fill(dev, buf, 1);
-                else
-                    uart_irq_tx_disable(dev);
+                if (n > 0) {
+                    uart_fifo_fill(dev_485, buf, 1);
+                } else {
+                    uart_irq_tx_disable(dev_485);
+                    tx_done = true;
+                }
             }
         }
     }
@@ -214,7 +229,8 @@ private:
         ring_buf rb;
         uint32_t buf[256 / sizeof (uint32_t)];
     } txbuf, rxbuf;
-    const device *dev{nullptr};
+    const device *dev_485{nullptr}, *dev_en{nullptr};
+    bool tx_done{false};
 } impl;
 
 }
