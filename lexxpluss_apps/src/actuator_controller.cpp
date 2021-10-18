@@ -156,7 +156,7 @@ public:
         dev_pwm[0] = device_get_binding("PWM_2");
         dev_pwm[1] = device_get_binding("PWM_4");
         dev_pwm[2] = device_get_binding("PWM_9");
-        for (auto i = 0; i < 3; ++i) {
+        for (auto i{0}; i < 3; ++i) {
             if (dev_pwm[i] == nullptr)
                 return -1;
         }
@@ -179,8 +179,8 @@ public:
             msg_ros2actuator ros2actuator;
             if (k_msgq_get(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) == 0)
                 handle(&ros2actuator);
-            uint32_t now_cycle = k_cycle_get_32();
-            uint32_t dt_ms = k_cyc_to_ms_near32(now_cycle - prev_cycle);
+            uint32_t now_cycle{k_cycle_get_32()};
+            uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle)};
             if (dt_ms > 100) {
                 prev_cycle = now_cycle;
                 msg_actuator2ros actuator2ros;
@@ -205,7 +205,7 @@ private:
     void get_encoder(int32_t data[3]) const {
         int16_t d[3];
         helper.get_count(d);
-        for (auto i = 0; i < 3; ++i)
+        for (auto i{0}; i < 3; ++i)
             data[i] = d[i];
     }
     void get_current(int32_t data[3]) const {
@@ -222,15 +222,15 @@ private:
         gpio_pin_set(dev_dir, 5, data[2] == 0 ? 0 : 1);
     }
     void control_duty(const uint16_t data[3]) const {
-        for (auto i = 0; i < 3; ++i) {
-            uint32_t pulse_ns = data[i] * CONTROL_PERIOD_NS / 65535;
+        for (auto i{0}; i < 3; ++i) {
+            uint32_t pulse_ns{data[i] * CONTROL_PERIOD_NS / 65535};
             pwm_pin_set_nsec(dev_pwm[i], 1, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
         }
     }
     timer_hal_helper helper;
     uint32_t prev_cycle{0};
     static constexpr uint32_t ACTUATOR_NUM{3};
-    const device *dev_pwm[ACTUATOR_NUM], *dev_dir;
+    const device *dev_pwm[ACTUATOR_NUM]{nullptr, nullptr, nullptr}, *dev_dir{nullptr};
     static constexpr uint32_t CONTROL_HZ{5000};
     static constexpr uint32_t CONTROL_PERIOD_NS{1000000000ULL / CONTROL_HZ};
 } impl;

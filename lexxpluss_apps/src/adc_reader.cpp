@@ -33,15 +33,15 @@ public:
         }
     }
     int32_t get(int index) const {
-        int32_t ref = adc_ref_internal(dev);
-        int32_t value = buffer[index];
+        int32_t ref{adc_ref_internal(dev)};
+        int32_t value{buffer[index]};
         if (ref > 0)
             adc_raw_to_millivolts(ref, ADC_GAIN_1, 12, &value);
         return value;
     }
 private:
     static constexpr int NUM_CHANNELS{6};
-    const device *dev = nullptr;
+    const device *dev{nullptr};
     adc_sequence sequence{
         .options{nullptr},
         .channels{0},

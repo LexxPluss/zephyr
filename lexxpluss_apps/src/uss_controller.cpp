@@ -27,7 +27,7 @@ public:
         distance[1] = this->distance[1];
     }
     static void runner(void *p1, void *p2, void *p3) {
-        uss_fetcher *self = static_cast<uss_fetcher*>(p1);
+        uss_fetcher *self{static_cast<uss_fetcher*>(p1)};
         self->run();
     }
     k_thread thread;

@@ -49,7 +49,7 @@ private:
         case msg_ros2led::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
         case msg_ros2led::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
         case msg_ros2led::SHOWTIME:        fill_toggle(showtime); break;
-        case msg_ros2led::RGB:             fill(led_rgb{.r = message.rgb[0], .g = message.rgb[1], .b = message.rgb[2]}); break;
+        case msg_ros2led::RGB:             fill(led_rgb{.r{message.rgb[0]}, .g{message.rgb[1]}, .b{message.rgb[2]}}); break;
         update();
         }
         ++counter;
@@ -60,10 +60,10 @@ private:
     }
     void fill(const led_rgb &color, uint32_t select = LED_BOTH) {
         if (select == LED_BOTH) {
-            for (uint32_t i = 0; i < PIXELS; ++i)
+            for (uint32_t i{0}; i < PIXELS; ++i)
                 pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = color;
         } else {
-            for (uint32_t i = 0; i < PIXELS; ++i)
+            for (uint32_t i{0}; i < PIXELS; ++i)
                 pixeldata[select][i] = color;
         }
     }
@@ -84,15 +84,15 @@ private:
         if (counter > 256 * 3)
             counter = 0;
         if (select == LED_BOTH) {
-            for (uint32_t i = 0; i < PIXELS; ++i)
+            for (uint32_t i{0}; i < PIXELS; ++i)
                 pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = wheel(((i * 256 / PIXELS) + counter / 3) & 255);
         } else {
-            for (uint32_t i = 0; i < PIXELS; ++i)
+            for (uint32_t i{0}; i < PIXELS; ++i)
                 pixeldata[select][i] = wheel(((i * 256 / PIXELS) + counter / 3) & 255);
         }
     }
     void fill_fade(const led_rgb &color) {
-        static constexpr uint32_t thres = 130;
+        static constexpr uint32_t thres{130};
         if (counter >= thres * 2)
             counter = 0;
         int percent;
@@ -110,10 +110,10 @@ private:
                 n = PIXELS;
         }
         if (select == LED_BOTH) {
-            for (uint32_t i = 0; i < PIXELS; ++i)
+            for (uint32_t i{0}; i < PIXELS; ++i)
                 pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < n ? color : black;
         } else {
-            for (uint32_t i = 0; i < PIXELS; ++i)
+            for (uint32_t i{0}; i < PIXELS; ++i)
                 pixeldata[select][i] = i < n ? color : black;
             fill(black, select == LED_LEFT ? LED_RIGHT : LED_LEFT);
         }
@@ -121,7 +121,7 @@ private:
             counter = 0;
     }
     void fill_toggle(const led_rgb &color) {
-        static constexpr uint32_t thres = 10;
+        static constexpr uint32_t thres{10};
         if (counter >= thres * 2)
             counter = 0;
         led_rgb c0, c1;
@@ -129,10 +129,10 @@ private:
             c0 = color, c1 = black;
         else
             c0 = black, c1 = color;
-        for (uint32_t i = 0, end = PIXELS / 8; i < end; i += 8) {
-            for (uint32_t j = 0; j < 4; ++j)
+        for (uint32_t i{0}, end{PIXELS / 8}; i < end; i += 8) {
+            for (uint32_t j{0}; j < 4; ++j)
                 pixeldata[LED_LEFT][i + j] = pixeldata[LED_RIGHT][i + j] = c0;
-            for (uint32_t j = 4; j < 8; ++j)
+            for (uint32_t j{4}; j < 8; ++j)
                 pixeldata[LED_LEFT][i + j] = pixeldata[LED_RIGHT][i + j] = c1;
         }
     }
@@ -144,7 +144,7 @@ private:
         return color_;
     }
     led_rgb wheel(uint32_t wheelpos) const {
-        static constexpr uint32_t thres = 256 / 3;
+        static constexpr uint32_t thres{256 / 3};
         led_rgb color;
         if (wheelpos < thres) {
             color.r = wheelpos * 3;
@@ -173,19 +173,19 @@ private:
     static const led_rgb emergency_stop, amr_mode, agv_mode, mission_pause, path_blocked, manual_drive;
     static const led_rgb dock_mode, waiting_for_job, orange, sequence, move_actuator, showtime, black;
 } impl;
-const led_rgb led_controller_impl::emergency_stop {.r = 0x80, .g = 0x00, .b = 0x00};
-const led_rgb led_controller_impl::amr_mode       {.r = 0x00, .g = 0x80, .b = 0x80};
-const led_rgb led_controller_impl::agv_mode       {.r = 0x45, .g = 0xff, .b = 0x00};
-const led_rgb led_controller_impl::mission_pause  {.r = 0xff, .g = 0xff, .b = 0x00};
-const led_rgb led_controller_impl::path_blocked   {.r = 0xe6, .g = 0x08, .b = 0xff};
-const led_rgb led_controller_impl::manual_drive   {.r = 0xfe, .g = 0xf4, .b = 0xff};
-const led_rgb led_controller_impl::dock_mode      {.r = 0x00, .g = 0x00, .b = 0xff};
-const led_rgb led_controller_impl::waiting_for_job{.r = 0xff, .g = 0xff, .b = 0x00};
-const led_rgb led_controller_impl::orange         {.r = 0xff, .g = 0xa5, .b = 0x00};
-const led_rgb led_controller_impl::sequence       {.r = 0x90, .g = 0x20, .b = 0x00};
-const led_rgb led_controller_impl::move_actuator  {.r = 0x45, .g = 0xff, .b = 0x00};
-const led_rgb led_controller_impl::showtime       {.r = 0x0f, .g = 0xb6, .b = 0xc8};
-const led_rgb led_controller_impl::black          {.r = 0x00, .g = 0x00, .b = 0x00};
+const led_rgb led_controller_impl::emergency_stop {.r{0x80}, .g{0x00}, .b{0x00}};
+const led_rgb led_controller_impl::amr_mode       {.r{0x00}, .g{0x80}, .b{0x80}};
+const led_rgb led_controller_impl::agv_mode       {.r{0x45}, .g{0xff}, .b{0x00}};
+const led_rgb led_controller_impl::mission_pause  {.r{0xff}, .g{0xff}, .b{0x00}};
+const led_rgb led_controller_impl::path_blocked   {.r{0xe6}, .g{0x08}, .b{0xff}};
+const led_rgb led_controller_impl::manual_drive   {.r{0xfe}, .g{0xf4}, .b{0xff}};
+const led_rgb led_controller_impl::dock_mode      {.r{0x00}, .g{0x00}, .b{0xff}};
+const led_rgb led_controller_impl::waiting_for_job{.r{0xff}, .g{0xff}, .b{0x00}};
+const led_rgb led_controller_impl::orange         {.r{0xff}, .g{0xa5}, .b{0x00}};
+const led_rgb led_controller_impl::sequence       {.r{0x90}, .g{0x20}, .b{0x00}};
+const led_rgb led_controller_impl::move_actuator  {.r{0x45}, .g{0xff}, .b{0x00}};
+const led_rgb led_controller_impl::showtime       {.r{0x0f}, .g{0xb6}, .b{0xc8}};
+const led_rgb led_controller_impl::black          {.r{0x00}, .g{0x00}, .b{0x00}};
 
 }
 

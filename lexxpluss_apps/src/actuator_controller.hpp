@@ -5,8 +5,8 @@
 struct msg_ros2actuator {
     uint16_t data[3];
     uint8_t type;
-    static constexpr uint8_t CWCCW = 0;
-    static constexpr uint8_t DUTY = 1;
+    static constexpr uint8_t CWCCW{0};
+    static constexpr uint8_t DUTY{1};
 } __attribute__((aligned(4)));
 
 struct msg_actuator2ros {

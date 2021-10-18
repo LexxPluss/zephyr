@@ -18,7 +18,7 @@ public:
         dev = device_get_binding("ADIS16470");
         if (dev == nullptr)
             return -1;
-        for (int i = 0; i < 3; ++i) {
+        for (int i{0}; i < 3; ++i) {
             message.accel[i] = 0;
             message.gyro[i] = 0;
             message.delta_ang[i] = 0;
@@ -62,7 +62,7 @@ private:
         sensor_channel_get(dev, chan, &v);
         return static_cast<float>(v.val1) + static_cast<float>(v.val2) * 1e-6f;
     }
-    const device *dev = nullptr;
+    const device *dev{nullptr};
     msg_imu2ros message;
 } impl;
 

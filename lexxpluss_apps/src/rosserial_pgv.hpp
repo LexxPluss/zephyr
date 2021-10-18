@@ -22,17 +22,17 @@ public:
     }
 private:
     void publish(const msg_pgv2ros &message) {
-        double ang = static_cast<double>(message.ang) / 10.0;
+        double ang{static_cast<double>(message.ang) / 10.0};
         if (ang < 180.0)
             ang *= -1.0;
         else
             ang = 360.0 - ang;
-        double xpos = message.xps;
+        double xpos{static_cast<double>(message.xps)};
         if (message.f.tag) {
             if (xpos > 2000.0)
                 xpos -= 0x01000001;
         }
-        double ypos = message.yps;
+        double ypos{static_cast<double>(message.yps)};
         if (ypos > 2000.0)
             ypos -= 16383.0;
         if (message.f.np)
