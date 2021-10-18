@@ -57,6 +57,7 @@
 };
 
 &clk_hse {
+	hse-bypass;
 	clock-frequency = <DT_FREQ_M(8)>;
 	status = "okay";
 };
