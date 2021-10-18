@@ -22,11 +22,11 @@ public:
         dev = device_get_binding("UART_6");
         if (dev != nullptr) {
             uart_config config{
-                .baudrate = 115200,
-                .parity = UART_CFG_PARITY_EVEN,
-                .stop_bits = UART_CFG_STOP_BITS_1,
-                .data_bits = UART_CFG_DATA_BITS_8,
-                .flow_ctrl = UART_CFG_FLOW_CTRL_NONE
+                .baudrate{115200},
+                .parity{UART_CFG_PARITY_EVEN},
+                .stop_bits{UART_CFG_STOP_BITS_1},
+                .data_bits{UART_CFG_DATA_BITS_8},
+                .flow_ctrl{UART_CFG_FLOW_CTRL_NONE}
             };
             uart_configure(dev, &config);
             uart_irq_rx_disable(dev);
@@ -39,7 +39,7 @@ public:
     void run() {
         if (!device_is_ready(dev))
             return;
-        for (int i = 0; i < 30; ++i) {
+        for (int i{0}; i < 30; ++i) {
             ring_buf_reset(&rxbuf.rb);
             set_direction_decision(DIR::STRAIGHT);
             if (wait_data(3))
@@ -78,13 +78,13 @@ private:
         req[0] = 0xc8;
         req[1] = ~req[0];
         send(req, sizeof req);
-        for (int i = 0; i < 100; ++i) {
+        for (int i{0}; i < 100; ++i) {
             if (rb_count(&rxbuf.rb) >= 21)
                 break;
             k_msleep(10);
         }
         uint8_t buf[64];
-        int n = ring_buf_get(&rxbuf.rb, buf, sizeof buf);
+        uint32_t n{ring_buf_get(&rxbuf.rb, buf, sizeof buf)};
         if (n < 21 || validate(buf, 21))
             return false;
         decode(buf, data);
@@ -156,9 +156,9 @@ private:
         }
     }
     bool validate(const uint8_t *buf, uint32_t length) const {
-        uint32_t tail = length - 1;
-        uint8_t check = buf[0];
-        for (uint32_t i = 1; i < tail; ++i)
+        uint32_t tail{length - 1};
+        uint8_t check{buf[0]};
+        for (uint32_t i{1}; i < tail; ++i)
             check ^= buf[i];
         return check == buf[tail];
     }
@@ -168,7 +168,7 @@ private:
     void send(const uint8_t *buf, uint32_t length) {
         if (dev != nullptr) {
             while (length > 0) {
-                int n = ring_buf_put(&txbuf.rb, buf, length);
+                uint32_t n{ring_buf_put(&txbuf.rb, buf, length)};
                 uart_irq_tx_enable(dev);
                 buf += n;
                 length -= n;
@@ -176,7 +176,7 @@ private:
         }
     }
     bool wait_data(uint32_t length) const {
-        for (int i = 0; i < 100; ++i) {
+        for (int i{0}; i < 100; ++i) {
             if (rb_count(&rxbuf.rb) >= length)
                 return true;
             k_msleep(10);
@@ -193,12 +193,12 @@ private:
         while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
             uint8_t buf[64];
             if (uart_irq_rx_ready(dev)) {
-                int n = uart_fifo_read(dev, buf, sizeof buf);
+                int n{uart_fifo_read(dev_485, buf, sizeof buf)};
                 if (n > 0)
                     ring_buf_put(&rxbuf.rb, buf, n);
             }
             if (uart_irq_tx_ready(dev)) {
-                int n = ring_buf_get(&txbuf.rb, buf, 1);
+                uint32_t n{ring_buf_get(&txbuf.rb, buf, 1)};
                 if (n > 0)
                     uart_fifo_fill(dev, buf, 1);
                 else
@@ -207,14 +207,14 @@ private:
         }
     }
     static void uart_isr_trampoline(const device *dev, void *user_data) {
-        pgv_controller_impl *self = static_cast<pgv_controller_impl*>(user_data);
+        pgv_controller_impl *self{static_cast<pgv_controller_impl*>(user_data)};
         self->uart_isr();
     }
     struct {
         ring_buf rb;
         uint32_t buf[256 / sizeof (uint32_t)];
     } txbuf, rxbuf;
-    const device *dev = nullptr;
+    const device *dev{nullptr};
 } impl;
 
 }

@@ -20,7 +20,7 @@ public:
     void poll() {
         msg_actuator2ros message;
         if (k_msgq_get(&msgq_actuator2ros, &message, K_NO_WAIT) == 0) {
-            for (int i = 0; i < 3; ++i) {
+            for (int i{0}; i < 3; ++i) {
                 msg_encoder.data[i] = message.encoder_count[i];
                 msg_current.data[i] = message.current[i];
             }

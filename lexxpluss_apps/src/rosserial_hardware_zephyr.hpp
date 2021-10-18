@@ -14,11 +14,11 @@ public:
         uart_dev = device_get_binding(name);
         if (uart_dev != nullptr) {
             uart_config config{
-                .baudrate = 115200,
-                .parity = UART_CFG_PARITY_NONE,
-                .stop_bits = UART_CFG_STOP_BITS_1,
-                .data_bits = UART_CFG_DATA_BITS_8,
-                .flow_ctrl = UART_CFG_FLOW_CTRL_NONE
+                .baudrate{115200},
+                .parity{UART_CFG_PARITY_NONE},
+                .stop_bits{UART_CFG_STOP_BITS_1},
+                .data_bits{UART_CFG_DATA_BITS_8},
+                .flow_ctrl{UART_CFG_FLOW_CTRL_NONE}
             };
             uart_configure(uart_dev, &config);
             uart_irq_rx_disable(uart_dev);
@@ -29,13 +29,13 @@ public:
     }
     int read() {
         uint8_t c;
-        uint32_t n = ring_buf_get(&ringbuf.rx, &c, sizeof c);
+        uint32_t n{ring_buf_get(&ringbuf.rx, &c, sizeof c)};
         return n > 0 ? c : -1;
     }
     void write(uint8_t* data, int length) {
         if (uart_dev != nullptr) {
             while (length > 0) {
-                int n = ring_buf_put(&ringbuf.tx, data, length);
+                uint32_t n{ring_buf_put(&ringbuf.tx, data, length)};
                 uart_irq_tx_enable(uart_dev);
                 data += n;
                 length -= n;
@@ -50,12 +50,12 @@ private:
         while (uart_irq_update(uart_dev) && uart_irq_is_pending(uart_dev)) {
             uint8_t buf[64];
             if (uart_irq_rx_ready(uart_dev)) {
-                int n = uart_fifo_read(uart_dev, buf, sizeof buf);
+                int n{uart_fifo_read(uart_dev, buf, sizeof buf)};
                 if (n > 0)
                     ring_buf_put(&ringbuf.rx, buf, n);
             }
             if (uart_irq_tx_ready(uart_dev)) {
-                int n = ring_buf_get(&ringbuf.tx, buf, 1);
+                uint32_t n{ring_buf_get(&ringbuf.tx, buf, 1)};
                 if (n > 0)
                     uart_fifo_fill(uart_dev, buf, 1);
                 else
@@ -64,7 +64,7 @@ private:
         }
     }
     static void uart_isr_trampoline(const device* dev, void* user_data) {
-        rosserial_hardware_zephyr* self = static_cast<rosserial_hardware_zephyr*>(user_data);
+        rosserial_hardware_zephyr* self{static_cast<rosserial_hardware_zephyr*>(user_data)};
         self->uart_isr();
     }
     struct {

@@ -46,18 +46,18 @@ public:
 private:
     void setup_can_filter() const {
         static const zcan_filter filter_bmu{
-            .id = 0x100,
-            .rtr = CAN_DATAFRAME,
-            .id_type = CAN_STANDARD_IDENTIFIER,
-            .id_mask = 0x7e0,
-            .rtr_mask = 1
+            .id{0x100},
+            .rtr{CAN_DATAFRAME},
+            .id_type{CAN_STANDARD_IDENTIFIER},
+            .id_mask{0x7e0},
+            .rtr_mask{1}
         };
         static const zcan_filter filter_power{
-            .id = 1000,
-            .rtr = CAN_DATAFRAME,
-            .id_type = CAN_STANDARD_IDENTIFIER,
-            .id_mask = CAN_STD_ID_MASK,
-            .rtr_mask = 1
+            .id{1000},
+            .rtr{CAN_DATAFRAME},
+            .id_type{CAN_STANDARD_IDENTIFIER},
+            .id_mask{CAN_STD_ID_MASK},
+            .rtr_mask{1}
         };
         can_attach_msgq(dev, &msgq_bmu, &filter_bmu);
         can_attach_msgq(dev, &msgq_power, &filter_power);
@@ -134,16 +134,16 @@ private:
     }
     void send_trolley_status() const {
         zcan_frame frame{
-            .id = 1001,
-            .rtr = CAN_DATAFRAME,
-            .id_type = CAN_STANDARD_IDENTIFIER,
-            .dlc = 1,
+            .id{1001},
+            .rtr{CAN_DATAFRAME},
+            .id_type{CAN_STANDARD_IDENTIFIER},
+            .dlc{1},
             .data{get_trolley_status()}
         };
         can_send(dev, &frame, K_MSEC(100), nullptr, nullptr);
     }
     uint8_t get_trolley_status() const {
-        int32_t mv = adc_reader::get(adc_reader::INDEX_TROLLEY);
+        int32_t mv{adc_reader::get(adc_reader::INDEX_TROLLEY)};
         if (mv > 3300 * 3 / 4)
             return 2;
         else if (mv > 3300 / 4)
