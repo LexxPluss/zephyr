@@ -169,7 +169,7 @@ public:
         return helper.init();
     }
     void run() {
-        for (const auto& i : dev_pwm) {
+        for (const auto &i : dev_pwm) {
             if (!device_is_ready(i))
                 return;
         }

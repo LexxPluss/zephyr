@@ -14,7 +14,7 @@ public:
     }
     void poll() {}
 private:
-    void callback_string(const std_msgs::String& req) {
+    void callback_string(const std_msgs::String &req) {
         msg_ros2led message;
         if      (strcmp(req.data, "emergency_stop")  == 0) message.pattern = msg_ros2led::EMERGENCY_STOP;
         else if (strcmp(req.data, "amr_mode")        == 0) message.pattern = msg_ros2led::AMR_MODE;
@@ -32,7 +32,7 @@ private:
         while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&msgq_ros2led);
     }
-    void callback_direct(const lexxauto_msgs::Led& req) {
+    void callback_direct(const lexxauto_msgs::Led &req) {
         msg_ros2led message;
         message.pattern = msg_ros2led::RGB;
         message.rgb[0] = req.r;

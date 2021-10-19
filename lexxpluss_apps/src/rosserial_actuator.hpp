@@ -28,7 +28,7 @@ public:
         }
     }
 private:
-    void callback_cwccw(const std_msgs::ByteMultiArray& req) {
+    void callback_cwccw(const std_msgs::ByteMultiArray &req) {
         msg_ros2actuator ros2actuator;
         ros2actuator.data[0] = req.data[0];
         ros2actuator.data[1] = req.data[1];
@@ -37,7 +37,7 @@ private:
         while (k_msgq_put(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) != 0)
             k_msgq_purge(&msgq_ros2actuator);
     }
-    void callback_duty(const std_msgs::UInt16MultiArray& req) {
+    void callback_duty(const std_msgs::UInt16MultiArray &req) {
         msg_ros2actuator ros2actuator;
         ros2actuator.data[0] = req.data[0];
         ros2actuator.data[1] = req.data[1];

@@ -49,7 +49,7 @@ private:
         msg.control_code2_detected = message.f.cc2;
         pub.publish(&msg);
     }
-    void callback(const pf_pgv100::pgv_dir_msg& req) {
+    void callback(const pf_pgv100::pgv_dir_msg &req) {
         switch (req.dir_command) {
         case 0:
             snprintf(direction, sizeof direction, "No lane is selected");
