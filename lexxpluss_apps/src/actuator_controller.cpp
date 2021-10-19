@@ -163,9 +163,8 @@ public:
         dev_dir = device_get_binding("GPIOF");
         if (dev_dir == nullptr)
             return -1;
-        gpio_pin_configure(dev_dir, 3, GPIO_OUTPUT | GPIO_ACTIVE_HIGH);
-        gpio_pin_configure(dev_dir, 4, GPIO_OUTPUT | GPIO_ACTIVE_HIGH);
-        gpio_pin_configure(dev_dir, 5, GPIO_OUTPUT | GPIO_ACTIVE_HIGH);
+        for (int i{0}; i < 3; ++i)
+            gpio_pin_configure(dev_dir, 3 + i, GPIO_OUTPUT | GPIO_ACTIVE_HIGH);
         return helper.init();
     }
     void run() {
@@ -176,9 +175,13 @@ public:
         if (!device_is_ready(dev_dir))
             return;
         while (true) {
-            msg_ros2actuator ros2actuator;
-            if (k_msgq_get(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) == 0)
-                handle(&ros2actuator);
+            msg_ros2actuator message;
+            if (k_msgq_get(&msgq_ros2actuator, &message, K_NO_WAIT) == 0) {
+                if (message.type == msg_ros2actuator::CONTROL)
+                    handle_control(&message);
+                else if (message.type == msg_ros2actuator::LOCATION)
+                    handle_location(&message);
+            }
             uint32_t now_cycle{k_cycle_get_32()};
             uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle)};
             if (dt_ms > 100) {
@@ -194,13 +197,24 @@ public:
         }
     }
 private:
-    void handle(const msg_ros2actuator *msg) const {
-        if (msg != nullptr) {
-            if (msg->type == msg_ros2actuator::CWCCW)
-                control_cwccw(msg->data);
-            else if (msg->type == msg_ros2actuator::DUTY)
-                control_duty(msg->data);
+    void handle_control(const msg_ros2actuator *msg) const {
+        for (int i{0}; i < 3; ++i) {
+            int direction;
+            uint8_t pwm;
+            if (msg->actuators[i].direction == 0) {
+                direction = 0;
+                pwm = 0;
+            } else {
+                direction = msg->actuators[i].direction > 0;
+                pwm = msg->actuators[i].power;
+            }
+            gpio_pin_set(dev_dir, 3 + i, direction);
+            uint32_t pulse_ns{pwm * CONTROL_PERIOD_NS / 100};
+            pwm_pin_set_nsec(dev_pwm[i], 1, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
         }
+    }
+    void handle_location(const msg_ros2actuator *msg) const {
+        //@@
     }
     void get_encoder(int32_t data[3]) const {
         int16_t d[3];
@@ -215,17 +229,6 @@ private:
     }
     int32_t get_trolley() const {
         return adc_reader::get(adc_reader::INDEX_TROLLEY);
-    }
-    void control_cwccw(const uint16_t data[3]) const {
-        gpio_pin_set(dev_dir, 3, data[0] == 0 ? 0 : 1);
-        gpio_pin_set(dev_dir, 4, data[1] == 0 ? 0 : 1);
-        gpio_pin_set(dev_dir, 5, data[2] == 0 ? 0 : 1);
-    }
-    void control_duty(const uint16_t data[3]) const {
-        for (auto i{0}; i < 3; ++i) {
-            uint32_t pulse_ns{data[i] * CONTROL_PERIOD_NS / 65535};
-            pwm_pin_set_nsec(dev_pwm[i], 1, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
-        }
     }
     timer_hal_helper helper;
     uint32_t prev_cycle{0};

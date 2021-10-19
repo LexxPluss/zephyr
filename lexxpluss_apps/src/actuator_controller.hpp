@@ -3,10 +3,14 @@
 #include <zephyr.h>
 
 struct msg_ros2actuator {
-    uint16_t data[3];
+    struct {
+        int32_t location;
+        int8_t direction;
+        uint8_t power;
+    } actuators[3];
     uint8_t type;
-    static constexpr uint8_t CWCCW{0};
-    static constexpr uint8_t DUTY{1};
+    static constexpr int8_t DOWN{-1}, STOP{0}, UP{1};
+    static constexpr uint8_t CONTROL{0}, LOCATION{1};
 } __attribute__((aligned(4)));
 
 struct msg_actuator2ros {

@@ -2,58 +2,62 @@
 
 #include <zephyr.h>
 #include "ros/node_handle.h"
-#include "std_msgs/ByteMultiArray.h"
+#include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/Int32MultiArray.h"
-#include "std_msgs/UInt16MultiArray.h"
+#include "lexxauto_msgs/LinearActuatorControlArray.h"
+#include "lexxauto_msgs/LinearActuatorLocationArray.h"
 #include "actuator_controller.hpp"
 
 class ros_actuator {
 public:
     void init(ros::NodeHandle &nh) {
-        nh.subscribe(sub_cwccw);
-        nh.subscribe(sub_duty);
+        nh.subscribe(sub_control);
         msg_encoder.data = msg_encoder_data;
         msg_encoder.data_length = sizeof msg_encoder_data / sizeof msg_encoder_data[0];
-        msg_current.data = msg_current_data;
-        msg_current.data_length = sizeof msg_current_data / sizeof msg_current_data[0];
+        msg_connection.data = msg_connection_data;
+        msg_connection.data_length = sizeof msg_connection_data / sizeof msg_connection_data[0];
     }
     void poll() {
         msg_actuator2ros message;
         if (k_msgq_get(&msgq_actuator2ros, &message, K_NO_WAIT) == 0) {
-            for (int i{0}; i < 3; ++i) {
+            for (int i{0}; i < 3; ++i)
                 msg_encoder.data[i] = message.encoder_count[i];
-                msg_current.data[i] = message.current[i];
-            }
             pub_encoder.publish(&msg_encoder);
+            msg_connection.data[0] = message.connect * 1e-3f;
+            pub_connection.publish(&msg_connection);
         }
     }
 private:
-    void callback_cwccw(const std_msgs::ByteMultiArray &req) {
-        msg_ros2actuator ros2actuator;
-        ros2actuator.data[0] = req.data[0];
-        ros2actuator.data[1] = req.data[1];
-        ros2actuator.data[2] = req.data[2];
-        ros2actuator.type = msg_ros2actuator::CWCCW;
-        while (k_msgq_put(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) != 0)
+    void callback_control(const lexxauto_msgs::LinearActuatorControlArray &req) {
+        msg_ros2actuator message;
+        message.type = msg_ros2actuator::CONTROL;
+        for (int i{0}; i < 3; ++i) {
+            message.actuators[i].direction = req.actuators[i].direction;
+            message.actuators[i].power = req.actuators[i].power;
+        }
+        while (k_msgq_put(&msgq_ros2actuator, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&msgq_ros2actuator);
     }
-    void callback_duty(const std_msgs::UInt16MultiArray &req) {
-        msg_ros2actuator ros2actuator;
-        ros2actuator.data[0] = req.data[0];
-        ros2actuator.data[1] = req.data[1];
-        ros2actuator.data[2] = req.data[2];
-        ros2actuator.type = msg_ros2actuator::DUTY;
-        while (k_msgq_put(&msgq_ros2actuator, &ros2actuator, K_NO_WAIT) != 0)
+    void callback_location(const lexxauto_msgs::LinearActuatorLocationArray &req) {
+        msg_ros2actuator message;
+        message.type = msg_ros2actuator::LOCATION;
+        for (int i{0}; i < 3; ++i) {
+            message.actuators[i].location = req.actuators[i].location;
+            message.actuators[i].power = req.actuators[i].power;
+        }
+        while (k_msgq_put(&msgq_ros2actuator, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&msgq_ros2actuator);
     }
     std_msgs::Int32MultiArray msg_encoder;
-    std_msgs::UInt16MultiArray msg_current;
+    std_msgs::Float32MultiArray msg_connection;
     int32_t msg_encoder_data[3];
-    uint16_t msg_current_data[3];
+    float msg_connection_data[1];
     ros::Publisher pub_encoder{"encoder_count", &msg_encoder};
-    ros::Publisher pub_current{"current_value", &msg_current};
-    ros::Subscriber<std_msgs::ByteMultiArray, ros_actuator> sub_cwccw{"request_direction_of_rotation", &ros_actuator::callback_cwccw, this};
-    ros::Subscriber<std_msgs::UInt16MultiArray, ros_actuator> sub_duty{"request_actuator_power", &ros_actuator::callback_duty, this};
+    ros::Publisher pub_connection{"shelf_connection", &msg_connection};
+    ros::Subscriber<lexxauto_msgs::LinearActuatorControlArray, ros_actuator>
+        sub_control{"/body_control/linear_actuator", &ros_actuator::callback_control, this};
+    ros::Subscriber<lexxauto_msgs::LinearActuatorLocationArray, ros_actuator>
+        sub_location{"/body_control/linear_actuator_location", &ros_actuator::callback_location, this};
 };
 
 // vim: set expandtab shiftwidth=4:
