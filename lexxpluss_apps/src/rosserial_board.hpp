@@ -1,3 +1,5 @@
+#pragma once
+
 #include <zephyr.h>
 #include "ros/node_handle.h"
 #include "std_msgs/Bool.h"
