@@ -43,7 +43,7 @@ public:
         return dev_485 == nullptr || dev_en == nullptr ? -1 : 0;
     }
     void run() {
-        if (!device_is_ready(dev_485))
+        if (!device_is_ready(dev_485) || !device_is_ready(dev_en))
             return;
         for (int i{0}; i < 30; ++i) {
             ring_buf_reset(&rxbuf.rb);
