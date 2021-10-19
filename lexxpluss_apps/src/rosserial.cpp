@@ -1,6 +1,7 @@
 #include "rosserial_hardware_zephyr.hpp"
 #include "rosserial_actuator.hpp"
 #include "rosserial_bmu.hpp"
+#include "rosserial_fan.hpp"
 #include "rosserial_imu.hpp"
 #include "rosserial_led.hpp"
 #include "rosserial_pgv.hpp"
@@ -16,6 +17,7 @@ public:
         nh.initNode(const_cast<char*>("UART_1"));
         actuator.init(nh);
         bmu.init(nh);
+        fan.init(nh);
         imu.init(nh);
         led.init(nh);
         pgv.init(nh);
@@ -28,6 +30,7 @@ public:
             nh.spinOnce();
             actuator.poll();
             bmu.poll();
+            fan.poll();
             imu.poll();
             led.poll();
             pgv.poll();
@@ -40,6 +43,7 @@ private:
     ros::NodeHandle nh;
     ros_actuator actuator;
     ros_bmu bmu;
+    ros_fan fan;
     ros_imu imu;
     ros_led led;
     ros_pgv pgv;
