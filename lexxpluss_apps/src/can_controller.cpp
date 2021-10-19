@@ -5,21 +5,24 @@
 #include "can_controller.hpp"
 
 k_msgq msgq_bmu2ros;
-k_msgq msgq_powerboard2ros;
+k_msgq msgq_board2ros;
+k_msgq msgq_ros2board;
 
 namespace {
 
 char __aligned(4) msgq_bmu2ros_buffer[10 * sizeof (msg_bmu2ros)];
-char __aligned(4) msgq_powerboard2ros_buffer[10 * sizeof (msg_powerboard2ros)];
+char __aligned(4) msgq_board2ros_buffer[10 * sizeof (msg_board2ros)];
+char __aligned(4) msgq_ros2board_buffer[10 * sizeof (msg_ros2board)];
 
-CAN_DEFINE_MSGQ(msgq_bmu, 10);
-CAN_DEFINE_MSGQ(msgq_power, 10);
+CAN_DEFINE_MSGQ(msgq_can_bmu, 10);
+CAN_DEFINE_MSGQ(msgq_can_board, 10);
 
 class can_controller_impl {
 public:
     int init() {
         k_msgq_init(&msgq_bmu2ros, msgq_bmu2ros_buffer, sizeof (msg_bmu2ros), 10);
-        k_msgq_init(&msgq_powerboard2ros, msgq_powerboard2ros_buffer, sizeof (msg_powerboard2ros), 10);
+        k_msgq_init(&msgq_board2ros, msgq_board2ros_buffer, sizeof (msg_board2ros), 10);
+        k_msgq_init(&msgq_ros2board, msgq_ros2board_buffer, sizeof (msg_ros2board), 10);
         dev = device_get_binding("CAN_1");
         return dev == nullptr ? -1 : 0;
     }
@@ -29,16 +32,18 @@ public:
         setup_can_filter();
         while (true) {
             zcan_frame frame;
-            if (k_msgq_get(&msgq_bmu, &frame, K_NO_WAIT) == 0) {
-                handler_bmu(frame);
-                while (k_msgq_put(&msgq_bmu2ros, &bmu2ros, K_NO_WAIT) != 0)
-                    k_msgq_purge(&msgq_bmu2ros);
+            if (k_msgq_get(&msgq_can_bmu, &frame, K_NO_WAIT) == 0) {
+                if (handler_bmu(frame)) {
+                    while (k_msgq_put(&msgq_bmu2ros, &bmu2ros, K_NO_WAIT) != 0)
+                        k_msgq_purge(&msgq_bmu2ros);
+                }
             }
-            if (k_msgq_get(&msgq_power, &frame, K_NO_WAIT) == 0) {
-                handler_power(frame);
-                while (k_msgq_put(&msgq_powerboard2ros, &powerboard2ros, K_NO_WAIT) != 0)
-                    k_msgq_purge(&msgq_powerboard2ros);
+            if (k_msgq_get(&msgq_can_board, &frame, K_NO_WAIT) == 0) {
+                handler_board(frame);
+                while (k_msgq_put(&msgq_board2ros, &board2ros, K_NO_WAIT) != 0)
+                    k_msgq_purge(&msgq_board2ros);
             }
+            k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT);
             send_trolley_status();
             k_msleep(30);
         }
@@ -52,17 +57,18 @@ private:
             .id_mask{0x7e0},
             .rtr_mask{1}
         };
-        static const zcan_filter filter_power{
+        static const zcan_filter filter_board{
             .id{1000},
             .rtr{CAN_DATAFRAME},
             .id_type{CAN_STANDARD_IDENTIFIER},
             .id_mask{CAN_STD_ID_MASK},
             .rtr_mask{1}
         };
-        can_attach_msgq(dev, &msgq_bmu, &filter_bmu);
-        can_attach_msgq(dev, &msgq_power, &filter_power);
+        can_attach_msgq(dev, &msgq_can_bmu, &filter_bmu);
+        can_attach_msgq(dev, &msgq_can_board, &filter_board);
     }
-    void handler_bmu(zcan_frame &frame) {
+    bool handler_bmu(zcan_frame &frame) {
+        bool result{false};
         if (frame.id == 0x100) {
             bmu2ros.mod_status1 = frame.data[0];
             bmu2ros.bmu_status = frame.data[1];
@@ -110,35 +116,37 @@ private:
             bmu2ros.manufacturing = (frame.data[0] << 8) | frame.data[1];
             bmu2ros.inspection = (frame.data[2] << 8) | frame.data[3];
             bmu2ros.serial = (frame.data[4] << 8) | frame.data[5];
+            result = true;
         }
+        return result;
     }
-    void handler_power(zcan_frame &frame) {
-        powerboard2ros.bumper_switch[0] = (frame.data[0] & 0b00001000) != 0;
-        powerboard2ros.bumper_switch[1] = (frame.data[0] & 0b00010000) != 0;
-        powerboard2ros.emergency_switch[0] = (frame.data[0] & 0b00000010) != 0;
-        powerboard2ros.emergency_switch[1] = (frame.data[0] & 0b00000100) != 0;
-        powerboard2ros.power_switch = (frame.data[0] & 0b00000001) != 0;
-        powerboard2ros.auto_charging = (frame.data[1] & 0b00000010) != 0;
-        powerboard2ros.manual_charging = (frame.data[1] & 0b00000001) != 0;
-        powerboard2ros.c_fet = (frame.data[2] & 0b00010000) != 0;
-        powerboard2ros.d_fet = (frame.data[2] & 0b00100000) != 0;
-        powerboard2ros.p_dsg = (frame.data[2] & 0b01000000) != 0;
-        powerboard2ros.v5_fail = (frame.data[2] & 0b00000001) != 0;
-        powerboard2ros.v16_fail = (frame.data[2] & 0b00000010) != 0;
-        powerboard2ros.wheel_disable[0] = (frame.data[3] & 0b00000001) != 0;
-        powerboard2ros.wheel_disable[1] = (frame.data[3] & 0b00000010) != 0;
-        powerboard2ros.fan_duty = frame.data[4];
-        powerboard2ros.charge_connector_temp[0] = frame.data[5];
-        powerboard2ros.charge_connector_temp[1] = frame.data[6];
-        powerboard2ros.board_temp = frame.data[7];
+    void handler_board(zcan_frame &frame) {
+        board2ros.bumper_switch[0] = (frame.data[0] & 0b00001000) != 0;
+        board2ros.bumper_switch[1] = (frame.data[0] & 0b00010000) != 0;
+        board2ros.emergency_switch[0] = (frame.data[0] & 0b00000010) != 0;
+        board2ros.emergency_switch[1] = (frame.data[0] & 0b00000100) != 0;
+        board2ros.power_switch = (frame.data[0] & 0b00000001) != 0;
+        board2ros.auto_charging = (frame.data[1] & 0b00000010) != 0;
+        board2ros.manual_charging = (frame.data[1] & 0b00000001) != 0;
+        board2ros.c_fet = (frame.data[2] & 0b00010000) != 0;
+        board2ros.d_fet = (frame.data[2] & 0b00100000) != 0;
+        board2ros.p_dsg = (frame.data[2] & 0b01000000) != 0;
+        board2ros.v5_fail = (frame.data[2] & 0b00000001) != 0;
+        board2ros.v16_fail = (frame.data[2] & 0b00000010) != 0;
+        board2ros.wheel_disable[0] = (frame.data[3] & 0b00000001) != 0;
+        board2ros.wheel_disable[1] = (frame.data[3] & 0b00000010) != 0;
+        board2ros.fan_duty = frame.data[4];
+        board2ros.charge_connector_temp[0] = frame.data[5];
+        board2ros.charge_connector_temp[1] = frame.data[6];
+        board2ros.board_temp = frame.data[7];
     }
     void send_trolley_status() const {
         zcan_frame frame{
             .id{1001},
             .rtr{CAN_DATAFRAME},
             .id_type{CAN_STANDARD_IDENTIFIER},
-            .dlc{1},
-            .data{get_trolley_status()}
+            .dlc{3},
+            .data{get_trolley_status(), ros2board.emergency_stop, ros2board.power_off}
         };
         can_send(dev, &frame, K_MSEC(100), nullptr, nullptr);
     }
@@ -152,7 +160,8 @@ private:
             return 0;
     }
     msg_bmu2ros bmu2ros{0};
-    msg_powerboard2ros powerboard2ros{0};
+    msg_board2ros board2ros{0};
+    msg_ros2board ros2board{0};
     const device *dev{nullptr};
 } impl;
 
