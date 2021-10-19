@@ -68,7 +68,7 @@ public:
                 }
                 wait_data(3);
             }
-            k_msleep(30);
+            k_msleep(10);
         }
     }
 private:
