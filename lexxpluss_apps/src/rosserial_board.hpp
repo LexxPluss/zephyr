@@ -4,6 +4,7 @@
 #include "std_msgs/Byte.h"
 #include "std_msgs/ByteMultiArray.h"
 #include "std_msgs/UInt8MultiArray.h"
+#include "lexxauto_msgs/BoardTemperatures.h"
 #include "can_controller.hpp"
 
 class ros_board {
@@ -11,6 +12,9 @@ public:
     void init(ros::NodeHandle &nh) {
         nh.advertise(pub_fan);
         nh.advertise(pub_bumper);
+        nh.advertise(pub_emergency);
+        nh.advertise(pub_charge);
+        nh.advertise(pub_temperature);
         msg_fan.data = msg_fan_data;
         msg_fan.data_length = sizeof msg_fan_data / sizeof msg_fan_data[0];
         msg_bumper.data = msg_bumper_data;
@@ -23,6 +27,7 @@ public:
             publish_bumper(message);
             publish_emergency(message);
             publish_charge(message);
+            publish_temperature(message);
         }
     }
 private:
@@ -48,6 +53,14 @@ private:
             msg_charge.data = 0;
         pub_charge.publish(&msg_charge);
     }
+    void publish_temperature(const msg_board2ros &message) {
+        msg_temperature.main.temperature = message.main_board_temp;
+        msg_temperature.power.temperature = message.power_board_temp;
+        msg_temperature.linear_actuator.temperature = message.actuator_board_temp;
+        msg_temperature.charge_plus.temperature = message.charge_connector_temp[0];
+        msg_temperature.charge_minus.temperature = message.charge_connector_temp[1];
+        pub_temperature.publish(&msg_temperature);
+    }
     void callback_emergency(const std_msgs::Bool &req) {
         ros2board.emergency_stop = req.data;
         while (k_msgq_put(&msgq_ros2board, &ros2board, K_NO_WAIT) != 0)
@@ -62,6 +75,7 @@ private:
     std_msgs::ByteMultiArray msg_bumper;
     std_msgs::Bool msg_emergency;
     std_msgs::Byte msg_charge;
+    lexxauto_msgs::BoardTemperatures msg_temperature;
     msg_ros2board ros2board{0};
     uint8_t msg_fan_data[1];
     int8_t msg_bumper_data[2];
@@ -69,6 +83,7 @@ private:
     ros::Publisher pub_bumper{"/sensor_set/bumper", &msg_bumper};
     ros::Publisher pub_emergency{"/sensor_set/emergency_switch", &msg_emergency};
     ros::Publisher pub_charge{"/body_control/charge_status", &msg_charge};
+    ros::Publisher pub_temperature{"/sensor_set/temperature", &msg_temperature};
     ros::Subscriber<std_msgs::Bool, ros_board> sub_emergency{"/control/request_emergency_stop", &ros_board::callback_emergency, this};
     ros::Subscriber<std_msgs::Bool, ros_board> sub_poweroff{"/control/request_power_off", &ros_board::callback_poweroff, this};
 };

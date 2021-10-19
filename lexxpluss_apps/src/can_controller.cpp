@@ -138,7 +138,9 @@ private:
         board2ros.fan_duty = frame.data[4];
         board2ros.charge_connector_temp[0] = frame.data[5];
         board2ros.charge_connector_temp[1] = frame.data[6];
-        board2ros.board_temp = frame.data[7];
+        board2ros.power_board_temp = frame.data[7];
+        board2ros.main_board_temp = 0; //@@
+        board2ros.actuator_board_temp = 0; //@@
     }
     void send_message() const {
         zcan_frame frame{
