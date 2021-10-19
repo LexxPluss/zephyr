@@ -26,7 +26,7 @@ public:
 private:
     std_msgs::Float64MultiArray msg;
     float msg_data[5];
-    ros::Publisher pub{"ultrasound_measured_data", &msg};
+    ros::Publisher pub{"ultrasonic", &msg};
 };
 
 // vim: set expandtab shiftwidth=4:
