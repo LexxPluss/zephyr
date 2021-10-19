@@ -49,13 +49,20 @@ private:
         pub_charge.publish(&msg_charge);
     }
     void callback_emergency(const std_msgs::Bool &req) {
+        ros2board.emergency_stop = req.data;
+        while (k_msgq_put(&msgq_ros2board, &ros2board, K_NO_WAIT) != 0)
+            k_msgq_purge(&msgq_ros2board);
     }
     void callback_poweroff(const std_msgs::Bool &req) {
+        ros2board.power_off = req.data;
+        while (k_msgq_put(&msgq_ros2board, &ros2board, K_NO_WAIT) != 0)
+            k_msgq_purge(&msgq_ros2board);
     }
     std_msgs::UInt8MultiArray msg_fan;
     std_msgs::ByteMultiArray msg_bumper;
     std_msgs::Bool msg_emergency;
     std_msgs::Byte msg_charge;
+    msg_ros2board ros2board{0};
     uint8_t msg_fan_data[1];
     int8_t msg_bumper_data[2];
     ros::Publisher pub_fan{"/sensor_set/fan", &msg_fan};
