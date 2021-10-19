@@ -44,7 +44,7 @@ public:
                     k_msgq_purge(&msgq_board2ros);
             }
             k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT);
-            send_trolley_status();
+            send_message();
             k_msleep(30);
         }
     }
@@ -140,7 +140,7 @@ private:
         board2ros.charge_connector_temp[1] = frame.data[6];
         board2ros.board_temp = frame.data[7];
     }
-    void send_trolley_status() const {
+    void send_message() const {
         zcan_frame frame{
             .id{1001},
             .rtr{CAN_DATAFRAME},
