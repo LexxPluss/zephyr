@@ -30,7 +30,7 @@ public:
     }
 private:
     lexxauto_msgs::Imu msg;
-    ros::Publisher pub{"imu", &msg};
+    ros::Publisher pub{"/sensor_set/imu", &msg};
 };
 
 // vim: set expandtab shiftwidth=4:

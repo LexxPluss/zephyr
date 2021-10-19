@@ -70,7 +70,7 @@ private:
             k_msgq_purge(&msgq_ros2pgv);
     }
     lexxauto_msgs::PositionGuideVision msg;
-    ros::Publisher pub{"pgv", &msg};
+    ros::Publisher pub{"/sensor_set/pgv", &msg};
     ros::Subscriber<std_msgs::UInt8, ros_pgv> sub{"/sensor_set/pgv_dir", &ros_pgv::callback, this};
     char direction[64]{"Straight Ahead"};
 };

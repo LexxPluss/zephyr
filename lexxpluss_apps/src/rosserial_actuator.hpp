@@ -52,8 +52,8 @@ private:
     std_msgs::Float32MultiArray msg_connection;
     int32_t msg_encoder_data[3];
     float msg_connection_data[1];
-    ros::Publisher pub_encoder{"encoder_count", &msg_encoder};
-    ros::Publisher pub_connection{"shelf_connection", &msg_connection};
+    ros::Publisher pub_encoder{"/body_control/encoder_count", &msg_encoder};
+    ros::Publisher pub_connection{"/body_control/shelf_connection", &msg_connection};
     ros::Subscriber<lexxauto_msgs::LinearActuatorControlArray, ros_actuator>
         sub_control{"/body_control/linear_actuator", &ros_actuator::callback_control, this};
     ros::Subscriber<lexxauto_msgs::LinearActuatorLocationArray, ros_actuator>

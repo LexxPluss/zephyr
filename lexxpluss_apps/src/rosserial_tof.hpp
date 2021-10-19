@@ -24,7 +24,7 @@ public:
 private:
     std_msgs::Float64MultiArray msg;
     float msg_data[2];
-    ros::Publisher pub{"downward", &msg};
+    ros::Publisher pub{"/sensor_set/downward", &msg};
 };
 
 // vim: set expandtab shiftwidth=4:

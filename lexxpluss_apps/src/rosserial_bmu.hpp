@@ -58,7 +58,7 @@ public:
     }
 private:
     sensor_msgs::BatteryState msg;
-    ros::Publisher pub{"battery", &msg};
+    ros::Publisher pub{"/sensor_set/battery", &msg};
 };
 
 // vim: set expandtab shiftwidth=4:
