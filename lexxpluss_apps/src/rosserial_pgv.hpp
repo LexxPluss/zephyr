@@ -3,8 +3,8 @@
 #include <zephyr.h>
 #include <cstdio>
 #include "ros/node_handle.h"
-#include "pf_pgv100/pgv_dir_msg.h"
-#include "pf_pgv100/pgv_scan_data.h"
+#include "std_msgs/UInt8.h"
+#include "lexxauto_msgs/PositionGuideVision.h"
 #include "pgv_controller.hpp"
 
 #define M_PI 3.14159265358979323846
@@ -49,8 +49,8 @@ private:
         msg.control_code2_detected = message.f.cc2;
         pub.publish(&msg);
     }
-    void callback(const pf_pgv100::pgv_dir_msg &req) {
-        switch (req.dir_command) {
+    void callback(const std_msgs::UInt8 &req) {
+        switch (req.data) {
         case 0:
             snprintf(direction, sizeof direction, "No lane is selected");
             break;
@@ -65,13 +65,13 @@ private:
             break;
         }
         msg_ros2pgv ros2pgv;
-        ros2pgv.dir_command = req.dir_command;
+        ros2pgv.dir_command = req.data;
         while (k_msgq_put(&msgq_ros2pgv, &ros2pgv, K_NO_WAIT) != 0)
             k_msgq_purge(&msgq_ros2pgv);
     }
-    pf_pgv100::pgv_scan_data msg;
-    ros::Publisher pub{"pgv100_scan", &msg};
-    ros::Subscriber<pf_pgv100::pgv_dir_msg, ros_pgv> sub{"/pgv_dir", &ros_pgv::callback, this};
+    lexxauto_msgs::PositionGuideVision msg;
+    ros::Publisher pub{"pgv", &msg};
+    ros::Subscriber<std_msgs::UInt8, ros_pgv> sub{"/sensor_set/pgv_dir", &ros_pgv::callback, this};
     char direction[64]{"Straight Ahead"};
 };
 
