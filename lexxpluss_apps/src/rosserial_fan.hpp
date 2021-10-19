@@ -20,7 +20,7 @@ public:
 private:
     std_msgs::UInt8MultiArray msg;
     uint8_t msg_data[1];
-    ros::Publisher pub{"fan", &msg};
+    ros::Publisher pub{"/sensor_set/fan", &msg};
 };
 
 // vim: set expandtab shiftwidth=4:
