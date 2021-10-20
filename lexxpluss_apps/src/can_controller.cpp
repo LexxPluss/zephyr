@@ -3,6 +3,7 @@
 #include <drivers/can.h>
 #include "adc_reader.hpp"
 #include "can_controller.hpp"
+#include "misc_controller.hpp"
 
 k_msgq msgq_bmu2ros;
 k_msgq msgq_board2ros;
@@ -139,8 +140,8 @@ private:
         board2ros.charge_connector_temp[0] = frame.data[5];
         board2ros.charge_connector_temp[1] = frame.data[6];
         board2ros.power_board_temp = frame.data[7];
-        board2ros.main_board_temp = 0; //@@
-        board2ros.actuator_board_temp = 0; //@@
+        board2ros.main_board_temp = misc_controller::get_main_board_temp();
+        board2ros.actuator_board_temp = misc_controller::get_actuator_board_temp();
     }
     void send_message() const {
         zcan_frame frame{
