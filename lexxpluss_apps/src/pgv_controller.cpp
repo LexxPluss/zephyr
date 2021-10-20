@@ -40,6 +40,7 @@ public:
             gpio_pin_configure(dev_en, 10, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
             gpio_pin_configure(dev_en, 11, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
         }
+        k_sem_init(&sem, 0, 1);
         return dev_485 == nullptr || dev_en == nullptr ? -1 : 0;
     }
     void run() {
@@ -176,14 +177,13 @@ private:
             gpio_pin_set(dev_en, 10, 1);
             gpio_pin_set(dev_en, 11, 1);
             while (length > 0) {
-                tx_done = false;
                 uint32_t n{ring_buf_put(&txbuf.rb, buf, length)};
                 uart_irq_tx_enable(dev_485);
                 buf += n;
                 length -= n;
             }
-            while (!tx_done)
-                k_usleep(50);
+            k_sem_take(&sem, K_USEC(500));
+            k_usleep(100);
             gpio_pin_set(dev_en, 10, 0);
             gpio_pin_set(dev_en, 11, 0);
         }
@@ -216,7 +216,7 @@ private:
                     uart_fifo_fill(dev_485, buf, 1);
                 } else {
                     uart_irq_tx_disable(dev_485);
-                    tx_done = true;
+                    k_sem_give(&sem);
                 }
             }
         }
@@ -230,7 +230,7 @@ private:
         uint32_t buf[256 / sizeof (uint32_t)];
     } txbuf, rxbuf;
     const device *dev_485{nullptr}, *dev_en{nullptr};
-    bool tx_done{false};
+    k_sem sem;
 } impl;
 
 }
