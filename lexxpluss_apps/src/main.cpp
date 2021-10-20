@@ -1,4 +1,7 @@
 #include <zephyr.h>
+#include <disk/disk_access.h>
+#include <fs/fs.h>
+#include <ff.h>
 #include "actuator_controller.hpp"
 #include "adc_reader.hpp"
 #include "can_controller.hpp"
@@ -29,6 +32,9 @@ K_THREAD_STACK_DEFINE(uss_controller_stack, 2048);
 
 }
 
+FATFS fatfs;
+fs_mount_t mount;
+
 void main()
 {
     actuator_controller::init();
@@ -51,6 +57,12 @@ void main()
     RUN(tof_controller);
     RUN(uss_controller);
     RUN(rosserial); // The rosserial thread will be started last.
+    if (disk_access_init("SD") == 0) {
+        mount.type = FS_FATFS;
+        mount.fs_data = &fatfs;
+        mount.mnt_point = "/SD:";
+        fs_mount(&mount);
+    }
     while (true) {
         k_msleep(1000);
     }
