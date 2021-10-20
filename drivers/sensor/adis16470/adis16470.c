@@ -185,14 +185,14 @@ static int adis16470_init(const struct device *dev)
         LOG_DBG("spi device not found: %s", config->spi_name);
         return -EINVAL;
     }
-    data->dr = device_get_binding("GPIOD");
+    data->dr = device_get_binding("GPIOJ");
     if (data->dr == NULL) {
-        LOG_DBG("spi device not found: GPIOD");
+        LOG_DBG("spi device not found: GPIOJ");
         return -EINVAL;
     }
-    gpio_pin_configure(data->dr, 4, GPIO_INPUT | GPIO_ACTIVE_HIGH);
-    gpio_pin_interrupt_configure(data->dr, 4, GPIO_INT_EDGE_RISING);
-    gpio_init_callback(&data->cb.cb, adis16470_dr, BIT(4));
+    gpio_pin_configure(data->dr, 2, GPIO_INPUT | GPIO_ACTIVE_HIGH);
+    gpio_pin_interrupt_configure(data->dr, 2, GPIO_INT_EDGE_RISING);
+    gpio_init_callback(&data->cb.cb, adis16470_dr, BIT(2));
     k_sem_init(&data->cb.sem, 0, 1);
     gpio_add_callback(data->dr, &data->cb.cb);
     data->spi_cfg.operation =
