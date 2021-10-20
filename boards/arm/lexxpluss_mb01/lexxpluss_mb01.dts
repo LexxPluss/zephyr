@@ -205,3 +205,8 @@
 	phase-seg2 = <6>;
 	status = "okay";
 };
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_sda_pb7 &i2c1_scl_pb8>;
+	status = "okay";
+};

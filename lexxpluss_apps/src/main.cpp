@@ -4,6 +4,7 @@
 #include "can_controller.hpp"
 #include "imu_controller.hpp"
 #include "led_controller.hpp"
+#include "misc_controller.hpp"
 #include "pgv_controller.hpp"
 #include "rosserial.hpp"
 #include "tof_controller.hpp"
@@ -16,6 +17,7 @@ K_THREAD_STACK_DEFINE(adc_reader_stack, 2048);
 K_THREAD_STACK_DEFINE(can_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(imu_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(led_controller_stack, 2048);
+K_THREAD_STACK_DEFINE(misc_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(pgv_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(rosserial_stack, 2048);
 K_THREAD_STACK_DEFINE(tof_controller_stack, 2048);
@@ -34,6 +36,7 @@ void main()
     can_controller::init();
     imu_controller::init();
     led_controller::init();
+    misc_controller::init();
     pgv_controller::init();
     rosserial::init();
     tof_controller::init();
@@ -43,6 +46,7 @@ void main()
     RUN(can_controller);
     RUN(imu_controller);
     RUN(led_controller);
+    RUN(misc_controller);
     RUN(pgv_controller);
     RUN(tof_controller);
     RUN(uss_controller);
