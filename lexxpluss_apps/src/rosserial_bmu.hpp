@@ -60,6 +60,7 @@ public:
             msg.temps[0].temperature = message.min_temp.value * 1e-1f;
             msg.temps[1].temperature = message.max_temp.value * 1e-1f;
             msg.temps[2].temperature = message.fet_temp * 1e-1f;
+            msg.state_of_health = message.soh;
             pub.publish(&msg);
         }
     }
