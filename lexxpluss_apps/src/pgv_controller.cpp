@@ -199,9 +199,6 @@ private:
     int recv(uint8_t *buf, uint32_t length) {
         return ring_buf_get(&rxbuf.rb, buf, length);
     }
-    bool is_received() {
-        return !ring_buf_is_empty(&rxbuf.rb);
-    }
     void uart_isr() {
         while (uart_irq_update(dev_485) && uart_irq_is_pending(dev_485)) {
             uint8_t buf[64];
