@@ -27,6 +27,7 @@ public:
                 int16_t value = (rbuf[0] << 8) | rbuf[1];
                 main_board_temperature = value / 128.0f;
             }
+            k_msleep(100);
         }
     }
     float get_main_board_temp() const {return main_board_temperature;}
