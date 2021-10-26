@@ -15,8 +15,8 @@ char __aligned(4) msgq_bmu2ros_buffer[10 * sizeof (msg_bmu2ros)];
 char __aligned(4) msgq_board2ros_buffer[10 * sizeof (msg_board2ros)];
 char __aligned(4) msgq_ros2board_buffer[10 * sizeof (msg_ros2board)];
 
-CAN_DEFINE_MSGQ(msgq_can_bmu, 10);
-CAN_DEFINE_MSGQ(msgq_can_board, 10);
+CAN_DEFINE_MSGQ(msgq_can_bmu, 16);
+CAN_DEFINE_MSGQ(msgq_can_board, 4);
 
 class can_controller_impl {
 public:
@@ -46,7 +46,7 @@ public:
             }
             k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT);
             send_message();
-            k_msleep(30);
+            k_msleep(1);
         }
     }
 private:
