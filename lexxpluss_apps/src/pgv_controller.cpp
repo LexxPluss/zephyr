@@ -10,14 +10,14 @@ k_msgq msgq_ros2pgv;
 
 namespace {
 
-char __aligned(4) msgq_pgv2ros_buffer[10 * sizeof (msg_pgv2ros)];
-char __aligned(4) msgq_ros2pgv_buffer[10 * sizeof (msg_ros2pgv)];
+char __aligned(4) msgq_pgv2ros_buffer[8 * sizeof (msg_pgv2ros)];
+char __aligned(4) msgq_ros2pgv_buffer[8 * sizeof (msg_ros2pgv)];
 
 class pgv_controller_impl {
 public:
     int init() {
-        k_msgq_init(&msgq_pgv2ros, msgq_pgv2ros_buffer, sizeof (msg_pgv2ros), 10);
-        k_msgq_init(&msgq_ros2pgv, msgq_ros2pgv_buffer, sizeof (msg_ros2pgv), 10);
+        k_msgq_init(&msgq_pgv2ros, msgq_pgv2ros_buffer, sizeof (msg_pgv2ros), 8);
+        k_msgq_init(&msgq_ros2pgv, msgq_ros2pgv_buffer, sizeof (msg_ros2pgv), 8);
         ring_buf_init(&rxbuf.rb, sizeof rxbuf.buf, rxbuf.buf);
         ring_buf_init(&txbuf.rb, sizeof txbuf.buf, txbuf.buf);
         dev_485 = device_get_binding("UART_6");
