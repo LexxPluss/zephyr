@@ -91,8 +91,8 @@ private:
             k_msleep(10);
         }
         uint8_t buf[64];
-        uint32_t n{ring_buf_get(&rxbuf.rb, buf, sizeof buf)};
-        if (n < 21 || validate(buf, 21))
+        int n{recv(buf, sizeof buf)};
+        if (n < 21 || !validate(buf, 21))
             return false;
         decode(buf, data);
         return true;
