@@ -111,7 +111,6 @@ static int maxbotix_sample_fetch(const struct device *dev, enum sensor_channel c
     uint32_t count = data->cb_data.end_time - data->cb_data.start_time;
     count = k_cyc_to_us_near32(count);
     if (count < 300 || count > 5000) {
-        LOG_INF("Invalid measurement %u", count);
         data->sensor_value.val1 = 0;
         data->sensor_value.val2 = 0;
     } else {
