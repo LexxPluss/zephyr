@@ -19,7 +19,7 @@ public:
             msg.data[1] = message.front_right * 1e-3f;
             msg.data[2] = message.left * 1e-3f;
             msg.data[3] = message.right * 1e-3f;
-            msg.data[3] = message.back * 1e-3f;
+            msg.data[4] = message.back * 1e-3f;
             pub.publish(&msg);
         }
     }
