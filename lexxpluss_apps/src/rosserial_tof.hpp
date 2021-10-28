@@ -15,7 +15,7 @@ public:
     void poll() {
         msg_tof2ros message;
         if (k_msgq_get(&msgq_tof2ros, &message, K_NO_WAIT) == 0) {
-            static constexpr float meter_per_volt{4.0f * 0.4f};
+            static constexpr float meter_per_volt{0.7575f};
             msg.data[0] = message.left * 1e-3f * meter_per_volt;
             msg.data[1] = message.right * 1e-3f * meter_per_volt;
             pub.publish(&msg);
