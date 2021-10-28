@@ -93,7 +93,7 @@ public:
             message.back = distance[0];
             while (k_msgq_put(&msgq_uss2ros, &message, K_NO_WAIT) != 0)
                 k_msgq_purge(&msgq_uss2ros);
-            k_msleep(50);
+            k_msleep(100);
         }
     }
 } impl;
