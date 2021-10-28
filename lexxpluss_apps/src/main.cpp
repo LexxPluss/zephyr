@@ -28,7 +28,7 @@ K_THREAD_STACK_DEFINE(uss_controller_stack, 2048);
 
 #define RUN(name) \
     k_thread_create(&name::thread, name##_stack, K_THREAD_STACK_SIZEOF(name##_stack), \
-                    name::run, nullptr, nullptr, nullptr, 5, K_FP_REGS, K_NO_WAIT);
+                    name::run, nullptr, nullptr, nullptr, 5, K_FP_REGS, K_MSEC(2000));
 
 }
 
