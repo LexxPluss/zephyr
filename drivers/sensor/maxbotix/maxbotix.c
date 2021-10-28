@@ -49,7 +49,7 @@ static void input_changed(const struct device *dev, struct gpio_callback *cb, ui
         cb_data->state = MAXBOTIX_STATE_FALLING_EDGE;
         break;
     case MAXBOTIX_STATE_FALLING_EDGE:
-        cb_data->start_time = k_cycle_get_32();
+        cb_data->end_time = k_cycle_get_32();
         cb_data->state = MAXBOTIX_STATE_FINISHED;
         gpio_remove_callback(dev, cb);
         k_sem_give(&cb_data->semaphore);
@@ -115,9 +115,14 @@ static int maxbotix_sample_fetch(const struct device *dev, enum sensor_channel c
         data->sensor_value.val1 = 0;
         data->sensor_value.val2 = 0;
     } else {
-        count *= 1000;
-        data->sensor_value.val1 = (count / 1000000);
-        data->sensor_value.val2 = (count % 1000000);
+        uint32_t micrometer = count * 1000;
+        data->sensor_value.val1 = (micrometer / 1000000);
+        data->sensor_value.val2 = (micrometer % 1000000);
+    }
+    static const uint32_t period_us = 98000, measure_us = 85000, count_max_us = period_us - measure_us;
+    if (count < count_max_us) {
+        uint32_t sleep_to_next = (period_us - (measure_us + count)) / 1000;
+        k_msleep(sleep_to_next);
     }
     return 0;
 }
