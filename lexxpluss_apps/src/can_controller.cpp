@@ -47,14 +47,19 @@ public:
                 handled = true;
             }
             if (k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT) == 0) {
-                prev_cycle = k_cycle_get_32();
+                prev_cycle_ros = k_cycle_get_32();
                 handled = true;
             }
-            if (prev_cycle != 0) {
-                uint32_t dt_ms{k_cyc_to_ms_near32(k_cycle_get_32() - prev_cycle)};
+            uint32_t now_cycle{k_cycle_get_32()};
+            if (prev_cycle_ros != 0) {
+                uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle_ros)};
                 heartbeat_timeout = dt_ms > 1000;
             }
-            send_message();
+            uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle_send)};
+            if (dt_ms > 100) {
+                prev_cycle_send = now_cycle;
+                send_message();
+            }
             if (!handled)
                 k_msleep(1);
         }
@@ -69,7 +74,7 @@ private:
             .rtr_mask{1}
         };
         static const zcan_filter filter_board{
-            .id{1000},
+            .id{0x200},
             .rtr{CAN_DATAFRAME},
             .id_type{CAN_STANDARD_IDENTIFIER},
             .id_mask{CAN_STD_ID_MASK},
@@ -155,7 +160,7 @@ private:
     }
     void send_message() const {
         zcan_frame frame{
-            .id{1001},
+            .id{0x201},
             .rtr{CAN_DATAFRAME},
             .id_type{CAN_STANDARD_IDENTIFIER},
             .dlc{3},
@@ -166,7 +171,7 @@ private:
     msg_bmu2ros bmu2ros{0};
     msg_board2ros board2ros{0};
     msg_ros2board ros2board{true, false};
-    uint32_t prev_cycle{0};
+    uint32_t prev_cycle_ros{0}, prev_cycle_send{0};
     const device *dev{nullptr};
     bool heartbeat_timeout{true};
 } impl;
