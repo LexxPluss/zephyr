@@ -6,12 +6,12 @@ k_msgq msgq_tof2ros;
 
 namespace {
 
-char __aligned(4) msgq_tof2ros_buffer[10 * sizeof (msg_tof2ros)];
+char __aligned(4) msgq_tof2ros_buffer[8 * sizeof (msg_tof2ros)];
 
 class tof_controller_impl {
 public:
     int init() const {
-        k_msgq_init(&msgq_tof2ros, msgq_tof2ros_buffer, sizeof (msg_tof2ros), 10);
+        k_msgq_init(&msgq_tof2ros, msgq_tof2ros_buffer, sizeof (msg_tof2ros), 8);
         return 0;
     }
     void run() const {

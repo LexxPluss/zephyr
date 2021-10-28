@@ -11,9 +11,9 @@ k_msgq msgq_ros2board;
 
 namespace {
 
-char __aligned(4) msgq_bmu2ros_buffer[10 * sizeof (msg_bmu2ros)];
-char __aligned(4) msgq_board2ros_buffer[10 * sizeof (msg_board2ros)];
-char __aligned(4) msgq_ros2board_buffer[10 * sizeof (msg_ros2board)];
+char __aligned(4) msgq_bmu2ros_buffer[8 * sizeof (msg_bmu2ros)];
+char __aligned(4) msgq_board2ros_buffer[8 * sizeof (msg_board2ros)];
+char __aligned(4) msgq_ros2board_buffer[8 * sizeof (msg_ros2board)];
 
 CAN_DEFINE_MSGQ(msgq_can_bmu, 16);
 CAN_DEFINE_MSGQ(msgq_can_board, 4);
@@ -21,9 +21,9 @@ CAN_DEFINE_MSGQ(msgq_can_board, 4);
 class can_controller_impl {
 public:
     int init() {
-        k_msgq_init(&msgq_bmu2ros, msgq_bmu2ros_buffer, sizeof (msg_bmu2ros), 10);
-        k_msgq_init(&msgq_board2ros, msgq_board2ros_buffer, sizeof (msg_board2ros), 10);
-        k_msgq_init(&msgq_ros2board, msgq_ros2board_buffer, sizeof (msg_ros2board), 10);
+        k_msgq_init(&msgq_bmu2ros, msgq_bmu2ros_buffer, sizeof (msg_bmu2ros), 8);
+        k_msgq_init(&msgq_board2ros, msgq_board2ros_buffer, sizeof (msg_board2ros), 8);
+        k_msgq_init(&msgq_ros2board, msgq_ros2board_buffer, sizeof (msg_ros2board), 8);
         dev = device_get_binding("CAN_1");
         return dev == nullptr ? -1 : 0;
     }
