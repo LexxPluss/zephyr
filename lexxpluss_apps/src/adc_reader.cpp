@@ -15,7 +15,7 @@ public:
             return;
         while (true) {
             read_all_channels();
-            k_msleep(50);
+            k_msleep(20);
         }
     }
     int32_t get(int index) const {
