@@ -32,21 +32,25 @@ public:
             return;
         setup_can_filter();
         while (true) {
+            bool handled{false};
             zcan_frame frame;
             if (k_msgq_get(&msgq_can_bmu, &frame, K_NO_WAIT) == 0) {
                 if (handler_bmu(frame)) {
                     while (k_msgq_put(&msgq_bmu2ros, &bmu2ros, K_NO_WAIT) != 0)
                         k_msgq_purge(&msgq_bmu2ros);
                 }
+                handled = true;
             }
             if (k_msgq_get(&msgq_can_board, &frame, K_NO_WAIT) == 0) {
                 handler_board(frame);
                 while (k_msgq_put(&msgq_board2ros, &board2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_board2ros);
+                handled = true;
             }
             k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT);
             send_message();
-            k_msleep(1);
+            if (!handled)
+                k_msleep(1);
         }
     }
 private:
