@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <disk/disk_access.h>
+#include <drivers/gpio.h>
 #include <fs/fs.h>
 #include <ff.h>
 #include "actuator_controller.hpp"
@@ -63,7 +64,15 @@ void main()
         mount.mnt_point = "/SD:";
         fs_mount(&mount);
     }
+    const device *gpiog = device_get_binding("GPIOG");
+    if (gpiog != nullptr)
+        gpio_pin_configure(gpiog, 12, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+    int heartbeat_led{1};
     while (true) {
+        if (gpiog != nullptr) {
+            gpio_pin_set(gpiog, 12, heartbeat_led);
+            heartbeat_led = !heartbeat_led;
+        }
         k_msleep(1000);
     }
 }
