@@ -7,12 +7,12 @@ k_msgq msgq_ros2led;
 
 namespace {
 
-char __aligned(4) msgq_ros2led_buffer[10 * sizeof (msg_ros2led)];
+char __aligned(4) msgq_ros2led_buffer[8 * sizeof (msg_ros2led)];
 
 class led_controller_impl {
 public:
     int init() {
-        k_msgq_init(&msgq_ros2led, msgq_ros2led_buffer, sizeof (msg_ros2led), 10);
+        k_msgq_init(&msgq_ros2led, msgq_ros2led_buffer, sizeof (msg_ros2led), 8);
         message.pattern = msg_ros2led::SHOWTIME;
         dev[LED_LEFT] = device_get_binding("WS2812_0");
         dev[LED_RIGHT] = device_get_binding("WS2812_1");

@@ -7,7 +7,7 @@ k_msgq msgq_uss2ros;
 
 namespace {
 
-char __aligned(4) msgq_uss2ros_buffer[10 * sizeof (msg_uss2ros)];
+char __aligned(4) msgq_uss2ros_buffer[8 * sizeof (msg_uss2ros)];
 
 class uss_fetcher {
 public:
@@ -67,7 +67,7 @@ K_THREAD_STACK_DEFINE(fetcher_stack_3, 2048);
 class uss_controller_impl {
 public:
     int init() const {
-        k_msgq_init(&msgq_uss2ros, msgq_uss2ros_buffer, sizeof (msg_uss2ros), 10);
+        k_msgq_init(&msgq_uss2ros, msgq_uss2ros_buffer, sizeof (msg_uss2ros), 8);
         fetcher[0].init("MB1604_0", "MB1604_1");
         fetcher[1].init("MB1604_2", nullptr);
         fetcher[2].init("MB1604_3", nullptr);

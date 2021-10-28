@@ -9,12 +9,12 @@ namespace {
 
 LOG_MODULE_REGISTER(imu_controller, LOG_LEVEL_INF);
 
-char __aligned(4) msgq_imu2ros_buffer[10 * sizeof (msg_imu2ros)];
+char __aligned(4) msgq_imu2ros_buffer[8 * sizeof (msg_imu2ros)];
 
 class imu_controller_impl {
 public:
     int init() {
-        k_msgq_init(&msgq_imu2ros, msgq_imu2ros_buffer, sizeof (msg_imu2ros), 10);
+        k_msgq_init(&msgq_imu2ros, msgq_imu2ros_buffer, sizeof (msg_imu2ros), 8);
         dev = device_get_binding("ADIS16470");
         if (dev == nullptr)
             return -1;

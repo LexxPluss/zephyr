@@ -42,8 +42,8 @@ extern "C" void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim_encoder)
 
 namespace {
 
-char __aligned(4) msgq_actuator2ros_buffer[10 * sizeof (msg_actuator2ros)];
-char __aligned(4) msgq_ros2actuator_buffer[10 * sizeof (msg_ros2actuator)];
+char __aligned(4) msgq_actuator2ros_buffer[8 * sizeof (msg_actuator2ros)];
+char __aligned(4) msgq_ros2actuator_buffer[8 * sizeof (msg_ros2actuator)];
 
 class timer_hal_helper {
 public:
@@ -150,8 +150,8 @@ private:
 class actuator_controller_impl {
 public:
     int init() {
-        k_msgq_init(&msgq_actuator2ros, msgq_actuator2ros_buffer, sizeof (msg_actuator2ros), 10);
-        k_msgq_init(&msgq_ros2actuator, msgq_ros2actuator_buffer, sizeof (msg_ros2actuator), 10);
+        k_msgq_init(&msgq_actuator2ros, msgq_actuator2ros_buffer, sizeof (msg_actuator2ros), 8);
+        k_msgq_init(&msgq_ros2actuator, msgq_ros2actuator_buffer, sizeof (msg_ros2actuator), 8);
         prev_cycle = k_cycle_get_32();
         dev_pwm[0] = device_get_binding("PWM_2");
         dev_pwm[1] = device_get_binding("PWM_4");
