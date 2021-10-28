@@ -1,7 +1,6 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/can.h>
-#include "adc_reader.hpp"
 #include "can_controller.hpp"
 #include "misc_controller.hpp"
 
@@ -47,7 +46,14 @@ public:
                     k_msgq_purge(&msgq_board2ros);
                 handled = true;
             }
-            k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT);
+            if (k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT) == 0) {
+                prev_cycle = k_cycle_get_32();
+                handled = true;
+            }
+            if (prev_cycle != 0) {
+                uint32_t dt_ms{k_cyc_to_ms_near32(k_cycle_get_32() - prev_cycle)};
+                heartbeat_timeout = dt_ms > 1000;
+            }
             send_message();
             if (!handled)
                 k_msleep(1);
@@ -153,23 +159,16 @@ private:
             .rtr{CAN_DATAFRAME},
             .id_type{CAN_STANDARD_IDENTIFIER},
             .dlc{3},
-            .data{get_trolley_status(), ros2board.emergency_stop, ros2board.power_off}
+            .data{ros2board.emergency_stop, ros2board.power_off, heartbeat_timeout}
         };
         can_send(dev, &frame, K_MSEC(100), nullptr, nullptr);
     }
-    uint8_t get_trolley_status() const {
-        int32_t mv{adc_reader::get(adc_reader::INDEX_TROLLEY)};
-        if (mv > 3300 * 3 / 4)
-            return 2;
-        else if (mv > 3300 / 4)
-            return 1;
-        else
-            return 0;
-    }
     msg_bmu2ros bmu2ros{0};
     msg_board2ros board2ros{0};
-    msg_ros2board ros2board{0};
+    msg_ros2board ros2board{true, false};
+    uint32_t prev_cycle{0};
     const device *dev{nullptr};
+    bool heartbeat_timeout{true};
 } impl;
 
 }
