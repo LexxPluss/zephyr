@@ -166,7 +166,7 @@ private:
     msg_ros2led message;
     static constexpr uint32_t PIXELS{DT_PROP(DT_NODELABEL(led_strip0), chain_length)};
     static constexpr uint32_t LED_LEFT{0}, LED_RIGHT{1}, LED_BOTH{2}, LED_NUM{2};
-    static constexpr uint32_t DELAY_MS{50};
+    static constexpr uint32_t DELAY_MS{25};
     const device *dev[LED_NUM]{nullptr, nullptr};
     led_rgb pixeldata[LED_NUM][PIXELS];
     uint32_t counter{0};
