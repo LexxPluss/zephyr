@@ -121,7 +121,7 @@ private:
             counter = 0;
     }
     void fill_toggle(const led_rgb &color) {
-        static constexpr uint32_t thres{10};
+        static constexpr uint32_t thres{5};
         if (counter >= thres * 2)
             counter = 0;
         led_rgb c0, c1;
@@ -129,11 +129,11 @@ private:
             c0 = color, c1 = black;
         else
             c0 = black, c1 = color;
-        for (uint32_t i{0}, end{PIXELS / 8}; i < end; i += 8) {
-            for (uint32_t j{0}; j < 4; ++j)
-                pixeldata[LED_LEFT][i + j] = pixeldata[LED_RIGHT][i + j] = c0;
-            for (uint32_t j{4}; j < 8; ++j)
-                pixeldata[LED_LEFT][i + j] = pixeldata[LED_RIGHT][i + j] = c1;
+        for (uint32_t i{0}; i < PIXELS; ++i) {
+            if (i % 2 == 0)
+                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = c0;
+            else
+                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = c1;
         }
     }
     led_rgb fader(const led_rgb &color, int percent) const {
