@@ -76,7 +76,7 @@ private:
 
 namespace ros {
 
-typedef NodeHandle_<rosserial_hardware_zephyr> NodeHandle;
+typedef NodeHandle_<rosserial_hardware_zephyr, 25, 25, 1024, 1024> NodeHandle;
 
 }
 
