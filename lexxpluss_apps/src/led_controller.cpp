@@ -50,8 +50,8 @@ private:
         case msg_ros2led::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
         case msg_ros2led::SHOWTIME:        fill_toggle(showtime); break;
         case msg_ros2led::RGB:             fill(led_rgb{.r{message.rgb[0]}, .g{message.rgb[1]}, .b{message.rgb[2]}}); break;
-        update();
         }
+        update();
         ++counter;
     }
     void update() {
