@@ -52,6 +52,8 @@ public:
             set_direction_decision(DIR::STRAIGHT);
             if (wait_data(3))
                 break;
+            uint8_t buf[8];
+            recv(buf, sizeof buf);
         }
         int heartbeat_led{1};
         while (true) {
@@ -72,6 +74,8 @@ public:
                     case 3: set_direction_decision(DIR::STRAIGHT); break;
                 }
                 wait_data(3);
+                uint8_t buf[8];
+                recv(buf, sizeof buf);
             }
             k_msleep(10);
         }
@@ -89,11 +93,7 @@ private:
         req[0] = 0xc8;
         req[1] = ~req[0];
         send(req, sizeof req);
-        for (int i{0}; i < 100; ++i) {
-            if (rb_count(&rxbuf.rb) >= 21)
-                break;
-            k_msleep(10);
-        }
+        wait_data(21);
         uint8_t buf[64];
         int n{recv(buf, sizeof buf)};
         if (n < 21 || !validate(buf, 21))
