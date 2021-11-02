@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/can.h>
+#include <drivers/gpio.h>
 #include "can_controller.hpp"
 #include "misc_controller.hpp"
 
@@ -31,7 +32,11 @@ public:
     void run() {
         if (!device_is_ready(dev))
             return;
+        const device *gpiok = device_get_binding("GPIOK");
+        if (gpiok != nullptr)
+            gpio_pin_configure(gpiok, 3, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
         setup_can_filter();
+        int heartbeat_led{1};
         while (true) {
             bool handled{false};
             zcan_frame frame;
@@ -61,6 +66,10 @@ public:
             if (dt_ms > 100) {
                 prev_cycle_send = now_cycle;
                 send_message();
+                if (gpiok != nullptr) {
+                    gpio_pin_set(gpiok, 3, heartbeat_led);
+                    heartbeat_led = !heartbeat_led;
+                }
             }
             if (!handled)
                 k_msleep(1);
