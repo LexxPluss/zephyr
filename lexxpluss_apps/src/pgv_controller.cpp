@@ -39,6 +39,7 @@ public:
         if (dev_en != nullptr) {
             gpio_pin_configure(dev_en, 10, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
             gpio_pin_configure(dev_en, 11, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+            gpio_pin_configure(dev_en, 13, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
         }
         k_sem_init(&sem, 0, 1);
         return dev_485 == nullptr || dev_en == nullptr ? -1 : 0;
@@ -52,7 +53,10 @@ public:
             if (wait_data(3))
                 break;
         }
+        int heartbeat_led{1};
         while (true) {
+            gpio_pin_set(dev_en, 13, heartbeat_led);
+            heartbeat_led = !heartbeat_led;
             msg_pgv2ros pgv2ros;
             if (get_position(pgv2ros)) {
                 while (k_msgq_put(&msgq_pgv2ros, &pgv2ros, K_NO_WAIT) != 0)
