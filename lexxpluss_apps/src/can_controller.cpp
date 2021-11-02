@@ -24,6 +24,8 @@ public:
         k_msgq_init(&msgq_board2ros, msgq_board2ros_buffer, sizeof (msg_board2ros), 8);
         k_msgq_init(&msgq_ros2board, msgq_ros2board_buffer, sizeof (msg_ros2board), 8);
         dev = device_get_binding("CAN_1");
+        if (dev != nullptr)
+            can_configure(dev, CAN_NORMAL_MODE, 500000);
         return dev == nullptr ? -1 : 0;
     }
     void run() {
