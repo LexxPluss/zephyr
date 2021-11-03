@@ -27,9 +27,9 @@ K_THREAD_STACK_DEFINE(rosserial_stack, 2048);
 K_THREAD_STACK_DEFINE(tof_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(uss_controller_stack, 2048);
 
-#define RUN(name) \
+#define RUN(name, prio) \
     k_thread_create(&name::thread, name##_stack, K_THREAD_STACK_SIZEOF(name##_stack), \
-                    name::run, nullptr, nullptr, nullptr, 5, K_FP_REGS, K_MSEC(2000));
+                    name::run, nullptr, nullptr, nullptr, prio, K_FP_REGS, K_MSEC(2000));
 
 }
 
@@ -48,16 +48,16 @@ void main()
     rosserial::init();
     tof_controller::init();
     uss_controller::init();
-    RUN(actuator_controller);
-    RUN(adc_reader);
-    RUN(can_controller);
-    RUN(imu_controller);
-    RUN(led_controller);
-    RUN(misc_controller);
-    RUN(pgv_controller);
-    RUN(tof_controller);
-    RUN(uss_controller);
-    RUN(rosserial); // The rosserial thread will be started last.
+    RUN(actuator_controller, 1);
+    RUN(adc_reader, 1);
+    RUN(can_controller, 3);
+    RUN(imu_controller, 1);
+    RUN(led_controller, 1);
+    RUN(misc_controller, 1);
+    RUN(pgv_controller, 1);
+    RUN(tof_controller, 1);
+    RUN(uss_controller, 1);
+    RUN(rosserial, 2); // The rosserial thread will be started last.
     if (disk_access_init("SD") == 0) {
         mount.type = FS_FATFS;
         mount.fs_data = &fatfs;
