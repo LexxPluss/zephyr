@@ -40,6 +40,7 @@ public:
             gpio_pin_configure(dev_en, 10, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
             gpio_pin_configure(dev_en, 11, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
             gpio_pin_configure(dev_en, 13, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+            gpio_pin_set(dev_en, 10, 0);
         }
         k_sem_init(&sem, 0, 1);
         return dev_485 == nullptr || dev_en == nullptr ? -1 : 0;
@@ -50,7 +51,7 @@ public:
         for (int i{0}; i < 30; ++i) {
             ring_buf_reset(&rxbuf.rb);
             set_direction_decision(DIR::STRAIGHT);
-            if (wait_data(3))
+            if (wait_data(5))
                 break;
             uint8_t buf[8];
             recv(buf, sizeof buf);
@@ -73,7 +74,7 @@ public:
                     default:
                     case 3: set_direction_decision(DIR::STRAIGHT); break;
                 }
-                wait_data(3);
+                wait_data(5);
                 uint8_t buf[8];
                 recv(buf, sizeof buf);
             }
@@ -93,12 +94,12 @@ private:
         req[0] = 0xc8;
         req[1] = ~req[0];
         send(req, sizeof req);
-        wait_data(21);
+        wait_data(23);
         uint8_t buf[64];
         int n{recv(buf, sizeof buf)};
-        if (n < 21 || !validate(buf, 21))
+        if (n < 23 || !validate(buf + 2, 21))
             return false;
-        decode(buf, data);
+        decode(buf + 2, data);
         return true;
     }
     void set_direction_decision(DIR dir) {
@@ -178,8 +179,8 @@ private:
     }
     void send(const uint8_t *buf, uint32_t length) {
         if (dev_485 != nullptr) {
-            gpio_pin_set(dev_en, 10, 1);
             gpio_pin_set(dev_en, 11, 1);
+            k_busy_wait(100);
             while (length > 0) {
                 uint32_t n{ring_buf_put(&txbuf.rb, buf, length)};
                 uart_irq_tx_enable(dev_485);
@@ -187,8 +188,7 @@ private:
                 length -= n;
             }
             k_sem_take(&sem, K_USEC(500));
-            k_usleep(100);
-            gpio_pin_set(dev_en, 10, 0);
+            k_busy_wait(280); // 180 - 380
             gpio_pin_set(dev_en, 11, 0);
         }
     }
@@ -213,12 +213,12 @@ private:
             }
             if (uart_irq_tx_ready(dev_485)) {
                 uint32_t n{ring_buf_get(&txbuf.rb, buf, 1)};
-                if (n > 0) {
+                if (n > 0)
                     uart_fifo_fill(dev_485, buf, 1);
-                } else {
-                    uart_irq_tx_disable(dev_485);
-                    k_sem_give(&sem);
-                }
+            }
+            if (uart_irq_tx_complete(dev_485)) {
+                uart_irq_tx_disable(dev_485);
+                k_sem_give(&sem);
             }
         }
     }
