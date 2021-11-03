@@ -57,10 +57,10 @@ private:
             if (uart_irq_tx_ready(uart_dev)) {
                 uint32_t n{ring_buf_get(&ringbuf.tx, buf, 1)};
                 if (n > 0)
-                    uart_fifo_fill(uart_dev, buf, 1);
-                else
-                    uart_irq_tx_disable(uart_dev);
+                    uart_fifo_fill(uart_dev, buf, n);
             }
+            if (uart_irq_tx_complete(uart_dev))
+                uart_irq_tx_disable(uart_dev);
         }
     }
     static void uart_isr_trampoline(const device* dev, void* user_data) {
@@ -76,7 +76,7 @@ private:
 
 namespace ros {
 
-typedef NodeHandle_<rosserial_hardware_zephyr, 25, 25, 1024, 1024> NodeHandle;
+typedef NodeHandle_<rosserial_hardware_zephyr> NodeHandle;
 
 }
 
