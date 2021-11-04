@@ -180,6 +180,14 @@
 	};
 };
 
+&timers3 {
+	status = "okay";
+	pwm3: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim3_ch3_pb0>;
+	};
+};
+
 &timers4 {
 	status = "okay";
 	pwm4: pwm {
@@ -193,6 +201,22 @@
 	pwm9: pwm {
 		status = "okay";
 		pinctrl-0 = <&tim9_ch1_pa2>;
+	};
+};
+
+&timers12 {
+	status = "okay";
+	pwm12: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim12_ch1_ph6>;
+	};
+};
+
+&timers14 {
+	status = "okay";
+	pwm14: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim14_ch1_pf9>;
 	};
 };
 

@@ -9,11 +9,13 @@ public:
     int init() {
         dev = device_get_binding("I2C_1");
         if (dev != nullptr) {
-            uint8_t wbuf[1]{0x0b}, rbuf[2];
-            if (i2c_write_read(dev, ADDR, wbuf, sizeof wbuf, rbuf, sizeof rbuf) == 0 &&
-                (rbuf[0] & 0b11111000) == 0b11001000) {
-                uint8_t initbuf[2]{0x03, 0b10000000};
-                i2c_write(dev, initbuf, sizeof initbuf, ADDR);
+            for (int i{0}; i < TEMPERATURE_NUM; ++i) {
+                uint8_t wbuf[1]{0x0b}, rbuf[2];
+                if (i2c_write_read(dev, ADDR + i, wbuf, sizeof wbuf, rbuf, sizeof rbuf) == 0 &&
+                    (rbuf[0] & 0b11111000) == 0b11001000) {
+                    static constexpr uint8_t initbuf[2]{0x03, 0b10000000};
+                    i2c_write(dev, initbuf, sizeof initbuf, ADDR + i);
+                }
             }
         }
         return dev == nullptr ? -1 : 0;
@@ -22,19 +24,22 @@ public:
         if (!device_is_ready(dev))
             return;
         while (true) {
-            uint8_t wbuf[1]{0x00}, rbuf[2];
-            if (i2c_write_read(dev, ADDR, wbuf, sizeof wbuf, rbuf, sizeof rbuf) == 0) {
-                int16_t value = (rbuf[0] << 8) | rbuf[1];
-                main_board_temperature = value / 128.0f;
+            for (int i{0}; i < TEMPERATURE_NUM; ++i) {
+                uint8_t wbuf[1]{0x00}, rbuf[2];
+                if (i2c_write_read(dev, ADDR + i, wbuf, sizeof wbuf, rbuf, sizeof rbuf) == 0) {
+                    int16_t value = (rbuf[0] << 8) | rbuf[1];
+                    temperature[i] = value / 128.0f;
+                }
             }
             k_msleep(100);
         }
     }
-    float get_main_board_temp() const {return main_board_temperature;}
-    float get_actuator_board_temp() const {return actuator_board_temperature;}
+    float get_main_board_temp() const {return temperature[0];}
+    float get_actuator_board_temp(int index) const {return temperature[index];}
 private:
     const device *dev{nullptr};
-    float main_board_temperature{0.0f}, actuator_board_temperature{0.0f};
+    static constexpr int TEMPERATURE_NUM{4};
+    float temperature[TEMPERATURE_NUM]{0.0f, 0.0f, 0.0f, 0.0f};
     static constexpr uint8_t ADDR{0b1001000};
 } impl;
 
@@ -55,9 +60,9 @@ float misc_controller::get_main_board_temp()
     return impl.get_main_board_temp();
 }
 
-float misc_controller::get_actuator_board_temp()
+float misc_controller::get_actuator_board_temp(int index)
 {
-    return impl.get_actuator_board_temp();
+    return impl.get_actuator_board_temp(index);
 }
 
 k_thread misc_controller::thread;

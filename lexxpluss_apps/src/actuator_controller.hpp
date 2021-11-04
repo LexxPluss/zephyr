@@ -17,6 +17,7 @@ struct msg_actuator2ros {
     int32_t encoder_count[3];
     int32_t current[3];
     int32_t connect;
+    bool fail[3];
 } __attribute__((aligned(4)));
 
 struct actuator_controller {
