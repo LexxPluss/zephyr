@@ -45,6 +45,8 @@ namespace {
 char __aligned(4) msgq_actuator2ros_buffer[8 * sizeof (msg_actuator2ros)];
 char __aligned(4) msgq_ros2actuator_buffer[8 * sizeof (msg_ros2actuator)];
 
+static constexpr uint32_t ACTUATOR_NUM{3};
+
 class timer_hal_helper {
 public:
     int init() {
@@ -52,13 +54,13 @@ public:
             return -1;
         return 0;
     }
-    void get_count(int16_t data[3]) const {
+    void get_count(int16_t data[ACTUATOR_NUM]) const {
         data[0] = TIM1->CNT;
         TIM1->CNT = 0;
-        data[1] = TIM5->CNT;
-        TIM5->CNT = 0;
-        data[2] = TIM8->CNT;
+        data[1] = TIM8->CNT;
         TIM8->CNT = 0;
+        data[2] = TIM5->CNT;
+        TIM5->CNT = 0;
     }
 private:
     int init_tim1() {
@@ -144,7 +146,16 @@ private:
             return -1;
         return 0;
     }
-    TIM_HandleTypeDef timh[3];
+    TIM_HandleTypeDef timh[ACTUATOR_NUM];
+};
+
+static const struct {
+    const char *name;
+    uint32_t pin;
+} config[ACTUATOR_NUM][2]{
+    {{"PWM_12", 1}, {"PWM_2", 3}},
+    {{"PWM_14", 1}, {"PWM_4", 1}},
+    {{"PWM_3",  3}, {"PWM_9", 1}}
 };
 
 class actuator_controller_impl {
@@ -153,26 +164,32 @@ public:
         k_msgq_init(&msgq_actuator2ros, msgq_actuator2ros_buffer, sizeof (msg_actuator2ros), 8);
         k_msgq_init(&msgq_ros2actuator, msgq_ros2actuator_buffer, sizeof (msg_ros2actuator), 8);
         prev_cycle = k_cycle_get_32();
-        dev_pwm[0] = device_get_binding("PWM_2");
-        dev_pwm[1] = device_get_binding("PWM_4");
-        dev_pwm[2] = device_get_binding("PWM_9");
-        for (auto i{0}; i < 3; ++i) {
-            if (dev_pwm[i] == nullptr)
-                return -1;
+        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i) {
+            for (uint32_t j{0}; j < 2; ++j) {
+                dev_pwm[i][j] = device_get_binding(config[i][j].name);
+                if (dev_pwm[i][j] == nullptr)
+                    return -1;
+            }
         }
-        dev_dir = device_get_binding("GPIOF");
-        if (dev_dir == nullptr)
+        dev_power = device_get_binding("GPIOB");
+        dev_fail_01 = device_get_binding("GPIOF");
+        dev_fail_2 = device_get_binding("GPIOJ");
+        if (dev_power == nullptr || dev_fail_01 == nullptr || dev_fail_2 == nullptr)
             return -1;
-        for (int i{0}; i < 3; ++i)
-            gpio_pin_configure(dev_dir, 3 + i, GPIO_OUTPUT | GPIO_ACTIVE_HIGH);
+        gpio_pin_configure(dev_power, 1, GPIO_OUTPUT_HIGH | GPIO_ACTIVE_HIGH);
+        gpio_pin_configure(dev_fail_01, 11, GPIO_INPUT | GPIO_ACTIVE_HIGH);
+        gpio_pin_configure(dev_fail_01, 12, GPIO_INPUT | GPIO_ACTIVE_HIGH);
+        gpio_pin_configure(dev_fail_2, 4, GPIO_INPUT | GPIO_ACTIVE_HIGH);
         return helper.init();
     }
     void run() {
         for (const auto &i : dev_pwm) {
-            if (!device_is_ready(i))
-                return;
+            for (const auto &j : i) {
+                if (!device_is_ready(j))
+                    return;
+            }
         }
-        if (!device_is_ready(dev_dir))
+        if (!device_is_ready(dev_power))
             return;
         while (true) {
             msg_ros2actuator message;
@@ -182,6 +199,7 @@ public:
                 else if (message.type == msg_ros2actuator::LOCATION)
                     handle_location(&message);
             }
+            read_fail();
             uint32_t now_cycle{k_cycle_get_32()};
             uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle)};
             if (dt_ms > 100) {
@@ -190,6 +208,7 @@ public:
                 get_encoder(actuator2ros.encoder_count);
                 get_current(actuator2ros.current);
                 actuator2ros.connect = get_trolley();
+                get_fail(actuator2ros.fail);
                 while (k_msgq_put(&msgq_actuator2ros, &actuator2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_actuator2ros);
             }
@@ -198,31 +217,37 @@ public:
     }
 private:
     void handle_control(const msg_ros2actuator *msg) const {
-        for (int i{0}; i < 3; ++i) {
-            int direction;
-            uint8_t pwm;
+        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i) {
             if (msg->actuators[i].direction == 0) {
-                direction = 0;
-                pwm = 0;
+                for (uint32_t j{0}; j < 2; ++j)
+                    pwm_pin_set_nsec(dev_pwm[i][j], config[i][j].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
             } else {
-                direction = msg->actuators[i].direction > 0;
-                pwm = msg->actuators[i].power;
+                uint32_t pulse_ns{msg->actuators[i].power * CONTROL_PERIOD_NS / 100};
+                if (msg->actuators[i].direction < 0) {
+                    pwm_pin_set_nsec(dev_pwm[i][0], config[i][0].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
+                    pwm_pin_set_nsec(dev_pwm[i][1], config[i][1].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
+                } else {
+                    pwm_pin_set_nsec(dev_pwm[i][0], config[i][0].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
+                    pwm_pin_set_nsec(dev_pwm[i][1], config[i][1].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
+                }
             }
-            gpio_pin_set(dev_dir, 3 + i, direction);
-            uint32_t pulse_ns{pwm * CONTROL_PERIOD_NS / 100};
-            pwm_pin_set_nsec(dev_pwm[i], 1, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
         }
     }
     void handle_location(const msg_ros2actuator *msg) const {
         //@@
     }
-    void get_encoder(int32_t data[3]) const {
-        int16_t d[3];
+    void read_fail() {
+        fail[0] = gpio_pin_get(dev_fail_01, 11) == 0;
+        fail[1] = gpio_pin_get(dev_fail_01, 12) == 0;
+        fail[2] = gpio_pin_get(dev_fail_2, 4) == 0;
+    }
+    void get_encoder(int32_t data[ACTUATOR_NUM]) const {
+        int16_t d[ACTUATOR_NUM];
         helper.get_count(d);
-        for (auto i{0}; i < 3; ++i)
+        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
             data[i] = d[i];
     }
-    void get_current(int32_t data[3]) const {
+    void get_current(int32_t data[ACTUATOR_NUM]) const {
         data[0] = adc_reader::get(adc_reader::INDEX_ACTUATOR_0);
         data[1] = adc_reader::get(adc_reader::INDEX_ACTUATOR_1);
         data[2] = adc_reader::get(adc_reader::INDEX_ACTUATOR_2);
@@ -230,10 +255,15 @@ private:
     int32_t get_trolley() const {
         return adc_reader::get(adc_reader::INDEX_TROLLEY);
     }
+    void get_fail(bool fail[ACTUATOR_NUM]) const {
+        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
+            fail[i] = this->fail[i];
+    }
     timer_hal_helper helper;
     uint32_t prev_cycle{0};
-    static constexpr uint32_t ACTUATOR_NUM{3};
-    const device *dev_pwm[ACTUATOR_NUM]{nullptr, nullptr, nullptr}, *dev_dir{nullptr};
+    const device *dev_pwm[ACTUATOR_NUM][2]{{nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}};
+    const device *dev_power{nullptr}, *dev_fail_01{nullptr}, *dev_fail_2{nullptr};
+    bool fail[3]{false, false, false};
     static constexpr uint32_t CONTROL_HZ{5000};
     static constexpr uint32_t CONTROL_PERIOD_NS{1000000000ULL / CONTROL_HZ};
 } impl;
