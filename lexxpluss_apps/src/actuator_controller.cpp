@@ -191,6 +191,10 @@ public:
         }
         if (!device_is_ready(dev_power))
             return;
+        const device *gpiok = device_get_binding("GPIOK");
+        if (gpiok != nullptr)
+            gpio_pin_configure(gpiok, 4, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+        int heartbeat_led{1};
         while (true) {
             msg_ros2actuator message;
             if (k_msgq_get(&msgq_ros2actuator, &message, K_NO_WAIT) == 0) {
@@ -211,6 +215,10 @@ public:
                 get_fail(actuator2ros.fail);
                 while (k_msgq_put(&msgq_actuator2ros, &actuator2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_actuator2ros);
+                if (gpiok != nullptr) {
+                    gpio_pin_set(gpiok, 4, heartbeat_led);
+                    heartbeat_led = !heartbeat_led;
+                }
             }
             k_msleep(10);
         }
