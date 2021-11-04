@@ -21,10 +21,15 @@ public:
                 .flow_ctrl{UART_CFG_FLOW_CTRL_NONE}
             };
             uart_configure(uart_dev, &config);
+#if 1
+            uart_callback_set(uart_dev, uart_callback_trampoline, this);
+            uart_rx_enable(uart_dev, ringbuf.rbuf, sizeof ringbuf.rbuf, 0);
+#else
             uart_irq_rx_disable(uart_dev);
             uart_irq_tx_disable(uart_dev);
             uart_irq_callback_user_data_set(uart_dev, uart_isr_trampoline, this);
             uart_irq_rx_enable(uart_dev);
+#endif
         }
     }
     int read() {
@@ -36,9 +41,17 @@ public:
         if (uart_dev != nullptr) {
             while (length > 0) {
                 uint32_t n{ring_buf_put(&ringbuf.tx, data, length)};
+#if 0
                 uart_irq_tx_enable(uart_dev);
+#endif
                 data += n;
                 length -= n;
+#if 1
+                uint8_t *p;
+                n = ring_buf_get_claim(&ringbuf.tx, &p, sizeof ringbuf.tbuf);
+                if (n > 0)
+                    uart_tx(uart_dev, p, n, 10);
+#endif
             }
         }
     }
@@ -46,6 +59,29 @@ public:
         return k_uptime_get_32();
     }
 private:
+#if 1
+    void uart_callback(uart_event *evt) {
+        printk("callback type: %d\n", evt->type);
+        switch (evt->type) {
+        case UART_TX_DONE:
+        case UART_TX_ABORTED:
+            ring_buf_get_finish(&ringbuf.tx, evt->data.tx.len);
+            break;
+        case UART_RX_RDY:
+            ring_buf_put_finish(&ringbuf.rx, evt->data.rx.len);
+            break;
+        case UART_RX_BUF_REQUEST:
+            uart_rx_buf_rsp(uart_dev, ringbuf.rbuf, sizeof ringbuf.rbuf);
+            break;
+        default:
+            break;
+        }
+    }
+    static void uart_callback_trampoline(const device *dev, uart_event *evt, void *user_data) {
+        auto* self{static_cast<rosserial_hardware_zephyr*>(user_data)};
+        self->uart_callback(evt);
+    }
+#else
     void uart_isr() {
         while (uart_irq_update(uart_dev) && uart_irq_is_pending(uart_dev)) {
             uint8_t buf[64];
@@ -67,6 +103,7 @@ private:
         rosserial_hardware_zephyr* self{static_cast<rosserial_hardware_zephyr*>(user_data)};
         self->uart_isr();
     }
+#endif
     struct {
         ring_buf rx, tx;
         uint8_t rbuf[1024], tbuf[1024];
