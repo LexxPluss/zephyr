@@ -94,6 +94,8 @@
 &usart6 {
 	pinctrl-0 = <&usart6_tx_pg14 &usart6_rx_pg9>;
 	current-speed = <115200>;
+	dmas = <&dma2 6 5 0x28440 0x03>, <&dma2 1 5 0x28480 0x03>;
+	dma-names = "tx", "rx";
 	status = "okay";
 };
 
@@ -237,5 +239,9 @@
 
 &sdmmc1 {
 	pinctrl-0 = <&sdmmc1_d0_pc8 &sdmmc1_d1_pc9 &sdmmc1_d2_pc10 &sdmmc1_d3_pc11 &sdmmc1_ck_pc12 &sdmmc1_cmd_pd2>;
+	status = "okay";
+};
+
+&dma2 {
 	status = "okay";
 };

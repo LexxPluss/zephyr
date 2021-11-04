@@ -30,10 +30,15 @@ public:
                 .flow_ctrl{UART_CFG_FLOW_CTRL_NONE}
             };
             uart_configure(dev_485, &config);
+#if 1
+            uart_callback_set(dev_485, uart_callback_trampoline, this);
+            uart_rx_enable(dev_485, dma_buf[dma_index], DMA_BUFSIZE, 0);
+#else
             uart_irq_rx_disable(dev_485);
             uart_irq_tx_disable(dev_485);
             uart_irq_callback_user_data_set(dev_485, uart_isr_trampoline, this);
             uart_irq_rx_enable(dev_485);
+#endif
         }
         dev_en = device_get_binding("GPIOG");
         if (dev_en != nullptr) {
@@ -181,12 +186,16 @@ private:
         if (dev_485 != nullptr) {
             gpio_pin_set(dev_en, 11, 1);
             k_busy_wait(100);
+#if 1
+            uart_tx(dev_485, buf, length, 10);
+#else
             while (length > 0) {
                 uint32_t n{ring_buf_put(&txbuf.rb, buf, length)};
                 uart_irq_tx_enable(dev_485);
                 buf += n;
                 length -= n;
             }
+#endif
             k_sem_take(&sem, K_USEC(500));
             k_busy_wait(280); // 180 - 380
             gpio_pin_set(dev_en, 11, 0);
@@ -203,6 +212,33 @@ private:
     int recv(uint8_t *buf, uint32_t length) {
         return ring_buf_get(&rxbuf.rb, buf, length);
     }
+#if 1
+    void uart_callback(uart_event *evt) {
+        printk("callback type: %d\n", evt->type);
+        switch (evt->type) {
+        case UART_TX_DONE:
+        case UART_TX_ABORTED:
+            k_sem_give(&sem);
+            break;
+        case UART_RX_RDY:
+            ring_buf_put(&rxbuf.rb, &evt->data.rx.buf[evt->data.rx.offset], evt->data.rx.len);
+            break;
+        case UART_RX_BUF_REQUEST:
+            if (dma_index == 0)
+                dma_index = 1;
+            else
+                dma_index = 0;
+            uart_rx_buf_rsp(dev_485, dma_buf[dma_index], DMA_BUFSIZE);
+            break;
+        default:
+            break;
+        }
+    }
+    static void uart_callback_trampoline(const device *dev, uart_event *evt, void *user_data) {
+        auto *self{static_cast<pgv_controller_impl*>(user_data)};
+        self->uart_callback(evt);
+    }
+#else
     void uart_isr() {
         while (uart_irq_update(dev_485) && uart_irq_is_pending(dev_485)) {
             uint8_t buf[64];
@@ -226,10 +262,14 @@ private:
         pgv_controller_impl *self{static_cast<pgv_controller_impl*>(user_data)};
         self->uart_isr();
     }
+#endif
     struct {
         ring_buf rb;
         uint32_t buf[256 / sizeof (uint32_t)];
     } txbuf, rxbuf;
+    static constexpr uint32_t DMA_BUFSIZE{128};
+    uint8_t dma_buf[2][DMA_BUFSIZE];
+    int dma_index{0};
     const device *dev_485{nullptr}, *dev_en{nullptr};
     k_sem sem;
 } impl;
