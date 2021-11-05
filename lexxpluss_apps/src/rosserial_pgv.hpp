@@ -22,24 +22,18 @@ public:
     }
 private:
     void publish(const msg_pgv2ros &message) {
-        double ang{static_cast<double>(message.ang) / 10.0};
-        if (ang < 180.0)
-            ang *= -1.0;
+        float ang{static_cast<float>(message.ang) * 1.0f};
+        if (ang < 180.0f)
+            ang *= -1.0f;
         else
-            ang = 360.0 - ang;
-        double xpos{static_cast<double>(message.xps)};
-        if (message.f.tag) {
-            if (xpos > 2000.0)
-                xpos -= 0x01000001;
-        }
-        double ypos{static_cast<double>(message.yps)};
-        if (ypos > 2000.0)
-            ypos -= 16383.0;
-        if (message.f.np)
-            ypos *= -1.0;
-        msg.angle = ang * M_PI / 180.0;
-        msg.x_pos = xpos / 10000.0;
-        msg.y_pos = ypos / 10000.0;
+            ang = 360.0f - ang;
+        float xpos{static_cast<float>(message.xps)};
+        if (!message.f.tag)
+            xpos = message.xp;
+        float ypos{static_cast<float>(message.yps)};
+        msg.angle = ang * M_PI / 180.0f;
+        msg.x_pos = xpos * 1e-3f;
+        msg.y_pos = ypos * 1e-3f;
         msg.direction = direction;
         msg.color_lane_count = message.lane;
         msg.no_color_lane = message.f.nl;
