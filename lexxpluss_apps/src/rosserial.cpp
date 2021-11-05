@@ -36,7 +36,7 @@ public:
             pgv.poll();
             tof.poll();
             uss.poll();
-            k_msleep(1);
+            k_usleep(1);
         }
     }
 private:
