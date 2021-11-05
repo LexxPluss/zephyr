@@ -17,7 +17,7 @@ public:
     }
     void poll() {
         msg_pgv2ros message;
-        if (k_msgq_get(&msgq_pgv2ros, &message, K_NO_WAIT) == 0)
+        while (k_msgq_get(&msgq_pgv2ros, &message, K_NO_WAIT) == 0)
             publish(message);
     }
 private:
