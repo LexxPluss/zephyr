@@ -188,7 +188,7 @@ private:
                 length -= n;
             }
             k_sem_take(&sem, K_USEC(500));
-            k_busy_wait(280); // 180 - 380
+            k_busy_wait(280); // 180 - 380, At 115200 bps, the transmission of one octet requires 96us.
             gpio_pin_set(dev_en, 11, 0);
         }
     }
