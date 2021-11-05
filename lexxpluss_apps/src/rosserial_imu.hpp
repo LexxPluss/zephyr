@@ -12,7 +12,7 @@ public:
     }
     void poll() {
         msg_imu2ros message;
-        if (k_msgq_get(&msgq_imu2ros, &message, K_NO_WAIT) == 0) {
+        while (k_msgq_get(&msgq_imu2ros, &message, K_NO_WAIT) == 0) {
             msg.gyro.x = message.gyro[0];
             msg.gyro.y = message.gyro[1];
             msg.gyro.z = message.gyro[2];

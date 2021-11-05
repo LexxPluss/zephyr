@@ -24,7 +24,7 @@ public:
     }
     void poll() {
         msg_board2ros message;
-        if (k_msgq_get(&msgq_board2ros, &message, K_NO_WAIT) == 0) {
+        while (k_msgq_get(&msgq_board2ros, &message, K_NO_WAIT) == 0) {
             publish_fan(message);
             publish_bumper(message);
             publish_emergency(message);

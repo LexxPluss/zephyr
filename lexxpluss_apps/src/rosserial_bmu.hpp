@@ -15,7 +15,7 @@ public:
     }
     void poll() {
         msg_bmu2ros message;
-        if (k_msgq_get(&msgq_bmu2ros, &message, K_NO_WAIT) == 0) {
+        while (k_msgq_get(&msgq_bmu2ros, &message, K_NO_WAIT) == 0) {
             float cell_voltage[2];
             cell_voltage[0] = message.max_cell_voltage.value;
             cell_voltage[1] = message.min_cell_voltage.value;
