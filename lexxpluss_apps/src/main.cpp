@@ -48,16 +48,16 @@ void main()
     rosserial::init();
     tof_controller::init();
     uss_controller::init();
-    RUN(actuator_controller, 1);
-    RUN(adc_reader, 1);
-    RUN(can_controller, 3);
-    RUN(imu_controller, 1);
-    RUN(led_controller, 1);
-    RUN(misc_controller, 1);
+    RUN(actuator_controller, 2);
+    RUN(adc_reader, 2);
+    RUN(can_controller, 4);
+    RUN(imu_controller, 2);
+    RUN(led_controller, 2);
+    RUN(misc_controller, 2);
     RUN(pgv_controller, 1);
-    RUN(tof_controller, 1);
-    RUN(uss_controller, 1);
-    RUN(rosserial, 2); // The rosserial thread will be started last.
+    RUN(tof_controller, 2);
+    RUN(uss_controller, 2);
+    RUN(rosserial, 3); // The rosserial thread will be started last.
     if (disk_access_init("SD") == 0) {
         mount.type = FS_FATFS;
         mount.fs_data = &fatfs;
