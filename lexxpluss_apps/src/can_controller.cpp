@@ -167,7 +167,8 @@ private:
         board2ros.charge_connector_temp[1] = frame.data[6];
         board2ros.power_board_temp = frame.data[7];
         board2ros.main_board_temp = misc_controller::get_main_board_temp();
-        board2ros.actuator_board_temp = misc_controller::get_actuator_board_temp();
+        for (auto i{0}; i < 3; ++i)
+            board2ros.actuator_board_temp[i] = misc_controller::get_actuator_board_temp(i);
     }
     void send_message() const {
         zcan_frame frame{

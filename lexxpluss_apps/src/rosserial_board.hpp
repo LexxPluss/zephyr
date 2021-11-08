@@ -58,7 +58,7 @@ private:
     void publish_temperature(const msg_board2ros &message) {
         msg_temperature.main.temperature = message.main_board_temp;
         msg_temperature.power.temperature = message.power_board_temp;
-        msg_temperature.linear_actuator.temperature = message.actuator_board_temp;
+        msg_temperature.linear_actuator.temperature = message.actuator_board_temp[0];
         msg_temperature.charge_plus.temperature = message.charge_connector_temp[0];
         msg_temperature.charge_minus.temperature = message.charge_connector_temp[1];
         pub_temperature.publish(&msg_temperature);
