@@ -31,6 +31,17 @@ K_THREAD_STACK_DEFINE(uss_controller_stack, 2048);
     k_thread_create(&name::thread, name##_stack, K_THREAD_STACK_SIZEOF(name##_stack), \
                     name::run, nullptr, nullptr, nullptr, prio, K_FP_REGS, K_MSEC(2000));
 
+void reset_usb_hub()
+{
+    const device *gpioa = device_get_binding("GPIOA");
+    if (gpioa != nullptr) {
+        gpio_pin_configure(gpioa, 3, GPIO_OUTPUT_HIGH | GPIO_ACTIVE_HIGH);
+        gpio_pin_set(gpioa, 3, 0);
+        k_usleep(200);
+        gpio_pin_set(gpioa, 3, 1);
+    }
+}
+
 }
 
 FATFS fatfs;
@@ -38,6 +49,7 @@ fs_mount_t mount;
 
 void main()
 {
+    reset_usb_hub();
     actuator_controller::init();
     adc_reader::init();
     can_controller::init();
