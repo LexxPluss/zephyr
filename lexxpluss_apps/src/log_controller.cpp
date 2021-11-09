@@ -3,6 +3,7 @@
 #include <fs/fs.h>
 #include <ff.h>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include "log_controller.hpp"
 
@@ -76,6 +77,28 @@ public:
         reduce_file_count(root);
         reduce_disk_volume(root);
     }
+    void setup_new_log(const char *root) {
+        snprintf(workpath, sizeof workpath, "%s/log", root);
+        list.list(workpath, directory_list::ORDER::DESCENT);
+        int log_number{0};
+        if (list[0][0] != '\0') {
+            int n{atoi(&list[0][2])};
+            if (n >= 999999) {
+                rotate_log(root, n);
+                list.list(workpath, directory_list::ORDER::DESCENT);
+                if (list[0][0] != '\0')
+                    n = atoi(&list[0][2]);
+            }
+            log_number = n + 1;
+        }
+        snprintf(workpath, sizeof workpath, "%s/log/mb%06u.log", root, log_number);
+        fs_file_t_init(&logfp);
+        fs_open(&logfp, workpath, FS_O_WRITE | FS_O_CREATE | FS_O_APPEND);
+    }
+    void write(const char *message) {
+        fs_write(&logfp, message, strlen(message));
+        fs_sync(&logfp);
+    }
 private:
     void reduce_file_count(const char *root) {
         snprintf(workpath, sizeof workpath, "%s/log", root);
@@ -115,8 +138,21 @@ private:
             freeMB = static_cast<int64_t>(statvfs.f_frsize) * static_cast<int64_t>(statvfs.f_bfree) / 1000000LL;
         return freeMB;
     }
+    void rotate_log(const char *root, int last_log_number) {
+        int first_log_number{0};
+        snprintf(workpath, sizeof workpath, "%s/log", root);
+        list.list(workpath);
+        if (list[0][0] != '\0')
+            first_log_number = atoi(&list[0][2]);
+        for (int from{first_log_number}, to{0}; from < last_log_number; ++from, ++to) {
+            snprintf(workpath, sizeof workpath, "%s/log/mb%06u.log", root, from);
+            snprintf(workpath2, sizeof workpath2, "%s/log/mb%06u.log", root, to);
+            fs_rename(workpath, workpath2);
+        }
+    }
     directory_list list;
-    char workpath[PATH_MAX];
+    fs_file_t logfp;
+    char workpath[PATH_MAX], workpath2[PATH_MAX];
     static constexpr int32_t MIN_FREE_MB{1024};
     static constexpr uint32_t MAX_FILE_COUNT{500};
 };
@@ -135,13 +171,16 @@ public:
             mount.mnt_point = sdroot;
             if (fs_mount(&mount) == 0) {
                 util.maintain_log_area(sdroot);
+                util.setup_new_log(sdroot);
                 fs_ok = true;
             }
         }
         if (!fs_ok)
             return;
         while (true) {
-            k_msleep(1000);
+            msg_log message;
+            if (k_msgq_get(&msgq_log, &message, K_MSEC(1000)) == 0)
+                util.write(message.message);
         }
     }
 private:
