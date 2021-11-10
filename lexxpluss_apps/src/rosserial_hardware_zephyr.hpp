@@ -14,11 +14,11 @@ public:
         uart_dev = device_get_binding(name);
         if (uart_dev != nullptr) {
             uart_config config{
-                .baudrate{115200},
+                .baudrate{921600},
                 .parity{UART_CFG_PARITY_NONE},
                 .stop_bits{UART_CFG_STOP_BITS_1},
                 .data_bits{UART_CFG_DATA_BITS_8},
-                .flow_ctrl{UART_CFG_FLOW_CTRL_NONE}
+                .flow_ctrl{UART_CFG_FLOW_CTRL_RTS_CTS}
             };
             uart_configure(uart_dev, &config);
             uart_irq_rx_disable(uart_dev);
