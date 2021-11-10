@@ -17,6 +17,8 @@ public:
         nh.advertise(pub_emergency);
         nh.advertise(pub_charge);
         nh.advertise(pub_temperature);
+        nh.subscribe(sub_emergency);
+        nh.subscribe(sub_poweroff);
         msg_fan.data = msg_fan_data;
         msg_fan.data_length = sizeof msg_fan_data / sizeof msg_fan_data[0];
         msg_bumper.data = msg_bumper_data;
