@@ -1,8 +1,5 @@
 #include <zephyr.h>
-#include <disk/disk_access.h>
 #include <drivers/gpio.h>
-#include <fs/fs.h>
-#include <ff.h>
 #include "actuator_controller.hpp"
 #include "adc_reader.hpp"
 #include "can_controller.hpp"
@@ -44,9 +41,6 @@ void reset_usb_hub()
 
 }
 
-FATFS fatfs;
-fs_mount_t mount;
-
 void main()
 {
     reset_usb_hub();
@@ -70,12 +64,6 @@ void main()
     RUN(tof_controller, 2);
     RUN(uss_controller, 2);
     RUN(rosserial, 3); // The rosserial thread will be started last.
-    if (disk_access_init("SD") == 0) {
-        mount.type = FS_FATFS;
-        mount.fs_data = &fatfs;
-        mount.mnt_point = "/SD:";
-        fs_mount(&mount);
-    }
     const device *gpiog = device_get_binding("GPIOG");
     if (gpiog != nullptr)
         gpio_pin_configure(gpiog, 12, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
