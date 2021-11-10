@@ -40,4 +40,4 @@ void tof_controller::run(void *p1, void *p2, void *p3)
 
 k_thread tof_controller::thread;
 
-/* vim: set expandtab shiftwidth=4: */
+// vim: set expandtab shiftwidth=4:
