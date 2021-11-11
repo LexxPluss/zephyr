@@ -58,7 +58,7 @@ void main()
     RUN(adc_reader, 2);
     RUN(can_controller, 4);
     RUN(imu_controller, 2);
-    RUN(led_controller, 2);
+    RUN(led_controller, 1);
     RUN(misc_controller, 2);
     RUN(pgv_controller, 1);
     RUN(tof_controller, 2);
