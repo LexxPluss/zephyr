@@ -11,6 +11,8 @@
 class ros_actuator {
 public:
     void init(ros::NodeHandle &nh) {
+        nh.advertise(pub_encoder);
+        nh.advertise(pub_connection);
         nh.subscribe(sub_control);
         msg_encoder.data = msg_encoder_data;
         msg_encoder.data_length = sizeof msg_encoder_data / sizeof msg_encoder_data[0];
