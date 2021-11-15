@@ -183,14 +183,13 @@ public:
         return helper.init();
     }
     void run() {
-        for (const auto &i : dev_pwm) {
-            for (const auto &j : i) {
-                if (!device_is_ready(j))
+        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i) {
+            for (uint32_t j{0}; j < 2; ++j) {
+                if (!device_is_ready(dev_pwm[i][j]))
                     return;
+                pwm_pin_set_nsec(dev_pwm[i][j], config[i][j].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
             }
         }
-        if (!device_is_ready(dev_power))
-            return;
         const device *gpiok = device_get_binding("GPIOK");
         if (gpiok != nullptr)
             gpio_pin_configure(gpiok, 4, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
@@ -228,15 +227,16 @@ private:
         for (uint32_t i{0}; i < ACTUATOR_NUM; ++i) {
             if (msg->actuators[i].direction == 0) {
                 for (uint32_t j{0}; j < 2; ++j)
-                    pwm_pin_set_nsec(dev_pwm[i][j], config[i][j].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
+                    pwm_pin_set_nsec(dev_pwm[i][j], config[i][j].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
             } else {
-                uint32_t pulse_ns{msg->actuators[i].power * CONTROL_PERIOD_NS / 100};
-                if (msg->actuators[i].direction < 0) {
-                    pwm_pin_set_nsec(dev_pwm[i][0], config[i][0].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
-                    pwm_pin_set_nsec(dev_pwm[i][1], config[i][1].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
-                } else {
+                uint32_t pwm{100U - msg->actuators[i].power};
+                uint32_t pulse_ns{pwm * CONTROL_PERIOD_NS / 100};
+                if (msg->actuators[0].direction < 0) {
                     pwm_pin_set_nsec(dev_pwm[i][0], config[i][0].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
-                    pwm_pin_set_nsec(dev_pwm[i][1], config[i][1].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
+                    pwm_pin_set_nsec(dev_pwm[i][1], config[i][1].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
+                } else {
+                    pwm_pin_set_nsec(dev_pwm[i][0], config[i][0].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
+                    pwm_pin_set_nsec(dev_pwm[i][1], config[i][1].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
                 }
             }
         }
