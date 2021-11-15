@@ -28,19 +28,19 @@ public:
 private:
     void read_all_channels() {
         static constexpr uint8_t ch[NUM_CHANNELS]{0, 1, 10, 11, 12, 13};
-        for (auto i : ch) {
+        for (int i{0}; i < NUM_CHANNELS; ++i) {
             // Only single channel supported
             adc_channel_cfg channel_cfg{
                 .gain{ADC_GAIN_1},
                 .reference{ADC_REF_INTERNAL},
                 .acquisition_time{ADC_ACQ_TIME_DEFAULT},
-                .channel_id = i,
+                .channel_id = ch[i],
                 .differential{0}
             };
             adc_channel_setup(dev, &channel_cfg);
             adc_sequence sequence{
                 .options{nullptr},
-                .channels{BIT(i)},
+                .channels{BIT(ch[i])},
                 .buffer{&buffer[i]},
                 .buffer_size{sizeof buffer[i]},
                 .resolution{12},
