@@ -5,7 +5,6 @@
 #include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/Int32MultiArray.h"
 #include "lexxauto_msgs/LinearActuatorControlArray.h"
-#include "lexxauto_msgs/LinearActuatorLocationArray.h"
 #include "actuator_controller.hpp"
 
 class ros_actuator {
@@ -32,19 +31,8 @@ public:
 private:
     void callback_control(const lexxauto_msgs::LinearActuatorControlArray &req) {
         msg_ros2actuator message;
-        message.type = msg_ros2actuator::CONTROL;
         for (int i{0}; i < 3; ++i) {
             message.actuators[i].direction = req.actuators[i].direction;
-            message.actuators[i].power = req.actuators[i].power;
-        }
-        while (k_msgq_put(&msgq_ros2actuator, &message, K_NO_WAIT) != 0)
-            k_msgq_purge(&msgq_ros2actuator);
-    }
-    void callback_location(const lexxauto_msgs::LinearActuatorLocationArray &req) {
-        msg_ros2actuator message;
-        message.type = msg_ros2actuator::LOCATION;
-        for (int i{0}; i < 3; ++i) {
-            message.actuators[i].location = req.actuators[i].location;
             message.actuators[i].power = req.actuators[i].power;
         }
         while (k_msgq_put(&msgq_ros2actuator, &message, K_NO_WAIT) != 0)
@@ -58,8 +46,6 @@ private:
     ros::Publisher pub_connection{"/body_control/shelf_connection", &msg_connection};
     ros::Subscriber<lexxauto_msgs::LinearActuatorControlArray, ros_actuator>
         sub_control{"/body_control/linear_actuator", &ros_actuator::callback_control, this};
-    ros::Subscriber<lexxauto_msgs::LinearActuatorLocationArray, ros_actuator>
-        sub_location{"/body_control/linear_actuator_location", &ros_actuator::callback_location, this};
 };
 
 // vim: set expandtab shiftwidth=4:
