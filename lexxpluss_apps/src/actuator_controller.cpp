@@ -196,12 +196,8 @@ public:
         int heartbeat_led{1};
         while (true) {
             msg_ros2actuator message;
-            if (k_msgq_get(&msgq_ros2actuator, &message, K_NO_WAIT) == 0) {
-                if (message.type == msg_ros2actuator::CONTROL)
-                    handle_control(&message);
-                else if (message.type == msg_ros2actuator::LOCATION)
-                    handle_location(&message);
-            }
+            if (k_msgq_get(&msgq_ros2actuator, &message, K_NO_WAIT) == 0)
+                handle_control(message);
             read_fail();
             uint32_t now_cycle{k_cycle_get_32()};
             uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle)};
@@ -241,8 +237,6 @@ private:
             }
         }
     }
-    void handle_location(const msg_ros2actuator *msg) const {
-        //@@
     }
     void read_fail() {
         fail[0] = gpio_pin_get(dev_fail_01, 11) == 0;
