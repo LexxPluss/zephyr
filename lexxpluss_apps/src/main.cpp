@@ -8,6 +8,7 @@
 #include "misc_controller.hpp"
 #include "pgv_controller.hpp"
 #include "rosserial.hpp"
+#include "rosserial_service.hpp"
 #include "tof_controller.hpp"
 #include "uss_controller.hpp"
 
@@ -21,6 +22,7 @@ K_THREAD_STACK_DEFINE(led_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(misc_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(pgv_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(rosserial_stack, 2048);
+// K_THREAD_STACK_DEFINE(rosserial_service_stack, 2048);
 K_THREAD_STACK_DEFINE(tof_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(uss_controller_stack, 2048);
 
@@ -52,6 +54,7 @@ void main()
     misc_controller::init();
     pgv_controller::init();
     rosserial::init();
+    // rosserial_service::init();
     tof_controller::init();
     uss_controller::init();
     RUN(actuator_controller, 2);
@@ -64,6 +67,7 @@ void main()
     RUN(tof_controller, 2);
     RUN(uss_controller, 2);
     RUN(rosserial, 3); // The rosserial thread will be started last.
+    // RUN(rosserial_service, 4); // The rosserial thread will be started last.
     const device *gpiog = device_get_binding("GPIOG");
     if (gpiog != nullptr)
         gpio_pin_configure(gpiog, 12, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);

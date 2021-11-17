@@ -20,6 +20,8 @@ struct msg_actuator2ros {
 struct actuator_controller {
     static void init();
     static void run(void *p1, void *p2, void *p3);
+    static int init_location();
+    static int to_location(const uint8_t location[3], const uint8_t power[3], uint8_t detail[3]);
     static k_thread thread;
 };
 
