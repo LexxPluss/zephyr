@@ -198,7 +198,6 @@ public:
             msg_ros2actuator message;
             if (k_msgq_get(&msgq_ros2actuator, &message, K_NO_WAIT) == 0)
                 handle_control(message);
-            read_fail();
             uint32_t now_cycle{k_cycle_get_32()};
             uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle)};
             if (dt_ms > 100) {
@@ -238,11 +237,6 @@ private:
         }
     }
     }
-    void read_fail() {
-        fail[0] = gpio_pin_get(dev_fail_01, 11) == 0;
-        fail[1] = gpio_pin_get(dev_fail_01, 12) == 0;
-        fail[2] = gpio_pin_get(dev_fail_2, 4) == 0;
-    }
     void get_encoder(int32_t data[ACTUATOR_NUM]) const {
         int16_t d[ACTUATOR_NUM];
         helper.get_count(d);
@@ -258,14 +252,14 @@ private:
         return adc_reader::get(adc_reader::INDEX_TROLLEY);
     }
     void get_fail(bool fail[ACTUATOR_NUM]) const {
-        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
-            fail[i] = this->fail[i];
+        fail[0] = gpio_pin_get(dev_fail_01, 11) == 0;
+        fail[1] = gpio_pin_get(dev_fail_01, 12) == 0;
+        fail[2] = gpio_pin_get(dev_fail_2, 4) == 0;
     }
     timer_hal_helper helper;
     uint32_t prev_cycle{0};
     const device *dev_pwm[ACTUATOR_NUM][2]{{nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}};
     const device *dev_power{nullptr}, *dev_fail_01{nullptr}, *dev_fail_2{nullptr};
-    bool fail[3]{false, false, false};
     static constexpr uint32_t CONTROL_HZ{5000};
     static constexpr uint32_t CONTROL_PERIOD_NS{1000000000ULL / CONTROL_HZ};
 } impl;
