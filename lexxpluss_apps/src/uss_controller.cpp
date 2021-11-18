@@ -62,7 +62,7 @@ K_THREAD_STACK_DEFINE(fetcher_stack_3, 2048);
 
 #define RUN(x) \
     k_thread_create(&fetcher[x].thread, fetcher_stack_##x, K_THREAD_STACK_SIZEOF(fetcher_stack_##x), \
-                    &uss_fetcher::runner, &fetcher[x], nullptr, nullptr, 6, K_FP_REGS, K_NO_WAIT);
+                    &uss_fetcher::runner, &fetcher[x], nullptr, nullptr, 3, K_FP_REGS, K_NO_WAIT);
 
 class uss_controller_impl {
 public:
