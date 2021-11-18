@@ -5,6 +5,7 @@
 #include "can_controller.hpp"
 #include "imu_controller.hpp"
 #include "led_controller.hpp"
+#include "log_controller.hpp"
 #include "misc_controller.hpp"
 #include "pgv_controller.hpp"
 #include "rosserial.hpp"
@@ -19,6 +20,7 @@ K_THREAD_STACK_DEFINE(adc_reader_stack, 2048);
 K_THREAD_STACK_DEFINE(can_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(imu_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(led_controller_stack, 2048);
+// K_THREAD_STACK_DEFINE(log_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(misc_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(pgv_controller_stack, 2048);
 K_THREAD_STACK_DEFINE(rosserial_stack, 2048);
@@ -46,11 +48,18 @@ void reset_usb_hub()
 void main()
 {
     reset_usb_hub();
+    printk("\n"
+           " _                    ____  _\n"
+           "| |    _____  ____  _|  _ \\| |_   _ ___ ___\n"
+           "| |   / _ \\ \\/ /\\ \\/ / |_) | | | | / __/ __|\n"
+           "| |__|  __/>  <  >  <|  __/| | |_| \\__ \\__ \\\n"
+           "|_____\\___/_/\\_\\/_/\\_\\_|   |_|\\__,_|___/___/\n");
     actuator_controller::init();
     adc_reader::init();
     can_controller::init();
     imu_controller::init();
     led_controller::init();
+    // log_controller::init();
     misc_controller::init();
     pgv_controller::init();
     rosserial::init();
@@ -62,6 +71,7 @@ void main()
     RUN(can_controller, 4);
     RUN(imu_controller, 2);
     RUN(led_controller, 1);
+    // RUN(log_controller, 5);
     RUN(misc_controller, 2);
     RUN(pgv_controller, 1);
     RUN(tof_controller, 2);

@@ -204,6 +204,17 @@ void log_controller::run(void *p1, void *p2, void *p3)
     impl.run();
 }
 
+void log_controller::log(const char *fmt, ...)
+{
+    msg_log message;
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(message.message, sizeof message.message, fmt, ap);
+    va_end(ap);
+    while (k_msgq_put(&msgq_log, &message, K_NO_WAIT) != 0)
+        k_msgq_purge(&msgq_log);
+}
+
 k_thread log_controller::thread;
 
 // vim: set expandtab shiftwidth=4:

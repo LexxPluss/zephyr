@@ -9,6 +9,7 @@ struct msg_log {
 struct log_controller {
     static void init();
     static void run(void *p1, void *p2, void *p3);
+    static void log(const char *fmt, ...);
     static k_thread thread;
 };
 

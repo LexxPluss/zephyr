@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/sensor.h>
+#include "data_validator.hpp"
 #include "uss_controller.hpp"
 
 k_msgq msgq_uss2ros;
@@ -25,6 +26,8 @@ public:
     void get_distance(uint32_t distance[2]) const {
         distance[0] = this->distance[0];
         distance[1] = this->distance[1];
+        if (validator0.is_low_confidence() < 0.5f) {
+        }
     }
     static void runner(void *p1, void *p2, void *p3) {
         uss_fetcher *self{static_cast<uss_fetcher*>(p1)};
@@ -40,12 +43,14 @@ private:
                 sensor_value v;
                 sensor_channel_get(dev[0], SENSOR_CHAN_DISTANCE, &v);
                 distance[0] = v.val1 * 1000 + v.val2 / 1000;
+                validator0.put(distance[0]);
             }
             if (dev[1] != nullptr) {
                 if (sensor_sample_fetch_chan(dev[1], SENSOR_CHAN_ALL) == 0) {
                     sensor_value v;
                     sensor_channel_get(dev[1], SENSOR_CHAN_DISTANCE, &v);
                     distance[1] = v.val1 * 1000 + v.val2 / 1000;
+                    validator1.put(distance[1]);
                 }
             }
             k_msleep(1);
@@ -53,6 +58,7 @@ private:
     }
     const device *dev[2]{nullptr, nullptr};
     uint32_t distance[2]{0, 0};
+    data_validator<uint32_t, 1> validator0, validator1;
 } fetcher[4];
 
 K_THREAD_STACK_DEFINE(fetcher_stack_0, 2048);
