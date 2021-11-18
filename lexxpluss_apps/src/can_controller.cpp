@@ -17,6 +17,22 @@ char __aligned(4) msgq_ros2board_buffer[8 * sizeof (msg_ros2board)];
 
 CAN_DEFINE_MSGQ(msgq_can_bmu, 16);
 CAN_DEFINE_MSGQ(msgq_can_board, 4);
+CAN_DEFINE_MSGQ(msgq_can_log, 8);
+
+class log_printer {
+public:
+    void putc(char c) {
+        buffer[index++] = c;
+        if (c == '\n' || index >= 80) {
+            buffer[index] = '\0';
+            printk("%s", buffer);
+            index = 0;
+        }
+    }
+private:
+    uint32_t index{0};
+    char buffer[128];
+};
 
 class can_controller_impl {
 public:
@@ -53,6 +69,8 @@ public:
                     k_msgq_purge(&msgq_board2ros);
                 handled = true;
             }
+            if (k_msgq_get(&msgq_can_log, &frame, K_NO_WAIT) == 0)
+                handler_log(frame);
             if (k_msgq_get(&msgq_ros2board, &ros2board, K_NO_WAIT) == 0) {
                 prev_cycle_ros = k_cycle_get_32();
                 handled = true;
@@ -91,8 +109,16 @@ private:
             .id_mask{CAN_STD_ID_MASK},
             .rtr_mask{1}
         };
+        static const zcan_filter filter_log{
+            .id{0x300},
+            .rtr{CAN_DATAFRAME},
+            .id_type{CAN_STANDARD_IDENTIFIER},
+            .id_mask{CAN_STD_ID_MASK},
+            .rtr_mask{1}
+        };
         can_attach_msgq(dev, &msgq_can_bmu, &filter_bmu);
         can_attach_msgq(dev, &msgq_can_board, &filter_board);
+        can_attach_msgq(dev, &msgq_can_log, &filter_log);
     }
     bool handler_bmu(zcan_frame &frame) {
         bool result{false};
@@ -170,6 +196,14 @@ private:
         for (auto i{0}; i < 3; ++i)
             board2ros.actuator_board_temp[i] = misc_controller::get_actuator_board_temp(i);
     }
+    void handler_log(zcan_frame &frame) {
+        for (uint32_t i{0}; i < frame.dlc; ++i) {
+            uint8_t data{frame.data[i]};
+            if (data == 0)
+                break;
+            log.putc(data);
+        }
+    }
     void send_message() const {
         zcan_frame frame{
             .id{0x201},
@@ -183,6 +217,7 @@ private:
     msg_bmu2ros bmu2ros{0};
     msg_board2ros board2ros{0};
     msg_ros2board ros2board{true, false};
+    log_printer log;
     uint32_t prev_cycle_ros{0}, prev_cycle_send{0};
     const device *dev{nullptr};
     bool heartbeat_timeout{true};
