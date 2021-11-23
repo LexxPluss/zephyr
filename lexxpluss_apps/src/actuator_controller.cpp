@@ -237,6 +237,7 @@ public:
                 pwm_pin_set_nsec(dev_pwm[i][j], config[i][j].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
             }
         }
+        wait_encoder_stabilize();
         const device *gpiok = device_get_binding("GPIOK");
         if (gpiok != nullptr)
             gpio_pin_configure(gpiok, 4, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
@@ -263,6 +264,17 @@ public:
             }
             k_msleep(10);
         }
+    }
+    void wait_encoder_stabilize() {
+        for (int i{0}; i < 10; ++i) {
+            int32_t value[ACTUATOR_NUM];
+            calculator.poll();
+            calculator.get_delta_pulse(value);
+            if (value[0] == 0 && value[1] == 0 && value[2] == 0)
+                break;
+            k_msleep(100);
+        }
+        calculator.reset();
     }
     int init_location() {
         location_initialized = false;
