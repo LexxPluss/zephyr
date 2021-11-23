@@ -234,7 +234,7 @@ public:
             for (uint32_t j{0}; j < 2; ++j) {
                 if (!device_is_ready(dev_pwm[i][j]))
                     return;
-                pwm_pin_set_nsec(dev_pwm[i][j], config[i][j].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
+                pwm_pin_set_nsec(dev_pwm[i][j], config[i][j].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
             }
         }
         const device *gpiok = device_get_binding("GPIOK");
@@ -353,16 +353,15 @@ private:
     void pwm_control(int index, int direction, uint8_t pwm_duty) const {
         if (direction == msg_ros2actuator::STOP || pwm_duty == 0) {
             for (uint32_t i{0}; i < 2; ++i)
-                pwm_pin_set_nsec(dev_pwm[index][i], config[index][i].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
+                pwm_pin_set_nsec(dev_pwm[index][i], config[index][i].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
         } else {
-            uint32_t pwm{100U - pwm_duty};
-            uint32_t pulse_ns{pwm * CONTROL_PERIOD_NS / 100};
+            uint32_t pulse_ns{pwm_duty * CONTROL_PERIOD_NS / 100};
             if (direction < msg_ros2actuator::STOP) {
-                pwm_pin_set_nsec(dev_pwm[index][0], config[index][0].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
-                pwm_pin_set_nsec(dev_pwm[index][1], config[index][1].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
-            } else {
-                pwm_pin_set_nsec(dev_pwm[index][0], config[index][0].pin, CONTROL_PERIOD_NS, CONTROL_PERIOD_NS, PWM_POLARITY_NORMAL);
+                pwm_pin_set_nsec(dev_pwm[index][0], config[index][0].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
                 pwm_pin_set_nsec(dev_pwm[index][1], config[index][1].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
+            } else {
+                pwm_pin_set_nsec(dev_pwm[index][0], config[index][0].pin, CONTROL_PERIOD_NS, pulse_ns, PWM_POLARITY_NORMAL);
+                pwm_pin_set_nsec(dev_pwm[index][1], config[index][1].pin, CONTROL_PERIOD_NS, 0, PWM_POLARITY_NORMAL);
             }
         }
     }
