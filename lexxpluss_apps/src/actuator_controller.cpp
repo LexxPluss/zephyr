@@ -173,6 +173,10 @@ public:
             location = LOCATION_MAX;
         return location;
     }
+    void get_pulse(int32_t value[ACTUATOR_NUM]) const {
+        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
+            value[i] = pulse_value[i];
+    }
     void get_delta_pulse(int32_t value[ACTUATOR_NUM]) {
         for (uint32_t i{0}; i < ACTUATOR_NUM; ++i) {
             value[i] = pulse_value[i] - prev_pulse_value[i];
@@ -182,11 +186,11 @@ public:
 private:
     void update_pulse(int index, int pulse) {
         int32_t n{pulse_value[index]};
-        n += pulse;
-        if (n < 0)
-            n = 0;
-        if (n > PULSE_MAX)
-            n = PULSE_MAX;
+        n += -pulse;
+        // if (n < 0)
+        //     n = 0;
+        // if (n > PULSE_MAX)
+        //     n = PULSE_MAX;
         pulse_value[index] = n;
     }
     timer_hal_helper helper;
@@ -251,7 +255,7 @@ public:
             uint32_t dt_ms{k_cyc_to_ms_near32(now_cycle - prev_cycle)};
             if (dt_ms > 100) {
                 prev_cycle = now_cycle;
-                calculator.get_delta_pulse(actuator2ros.encoder_count);
+                calculator.get_pulse(actuator2ros.encoder_count);
                 get_current(actuator2ros.current);
                 actuator2ros.connect = get_trolley();
                 get_fail(actuator2ros.fail);
