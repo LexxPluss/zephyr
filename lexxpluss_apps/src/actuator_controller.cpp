@@ -76,11 +76,11 @@ private:
         sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
         sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
         sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-        sConfig.IC1Filter = 0;
+        sConfig.IC1Filter = 0b1111;
         sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
         sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
         sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-        sConfig.IC2Filter = 0;
+        sConfig.IC2Filter = 0b1111;
         if (HAL_TIM_Encoder_Init(&timh[0], &sConfig) != HAL_OK)
             return -1;
         TIM_MasterConfigTypeDef sMasterConfig{0};
@@ -104,11 +104,11 @@ private:
         sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
         sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
         sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-        sConfig.IC1Filter = 0;
+        sConfig.IC1Filter = 0b1111;
         sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
         sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
         sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-        sConfig.IC2Filter = 0;
+        sConfig.IC2Filter = 0b1111;
         if (HAL_TIM_Encoder_Init(&timh[1], &sConfig) != HAL_OK)
             return -1;
         TIM_MasterConfigTypeDef sMasterConfig{0};
@@ -131,11 +131,11 @@ private:
         sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
         sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
         sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-        sConfig.IC1Filter = 0;
+        sConfig.IC1Filter = 0b1111;
         sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
         sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
         sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-        sConfig.IC2Filter = 0;
+        sConfig.IC2Filter = 0b1111;
         if (HAL_TIM_Encoder_Init(&timh[2], &sConfig) != HAL_OK)
             return -1;
         TIM_MasterConfigTypeDef sMasterConfig{0};
