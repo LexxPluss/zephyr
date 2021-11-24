@@ -19,7 +19,8 @@ struct msg_bmu2ros {
 } __attribute__((aligned(4)));
 
 struct msg_board2ros {
-    int16_t charge_connector_temp[2], power_board_temp, main_board_temp, actuator_board_temp[3];
+    float main_board_temp, actuator_board_temp[3];
+    int16_t charge_connector_temp[2], power_board_temp;
     uint8_t fan_duty;
     bool bumper_switch[2];
     bool emergency_switch[2];
