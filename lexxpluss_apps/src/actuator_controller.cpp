@@ -1,6 +1,8 @@
 #include <device.h>
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
+#include <shell/shell.h>
+#include <cstdlib>
 #include "adc_reader.hpp"
 #include "actuator_controller.hpp"
 
@@ -351,6 +353,9 @@ public:
         k_mutex_unlock(&service_mutex);
         return remaining <= 0 ? 0 : -1;
     }
+    void act_current() {
+        current_monitor = !current_monitor;
+    }
 private:
     void handle_control(const msg_ros2actuator &msg) {
         if (k_mutex_lock(&service_mutex, K_MSEC(10)) != 0)
@@ -382,6 +387,8 @@ private:
         data[0] = adc_reader::get(adc_reader::INDEX_ACTUATOR_0);
         data[1] = adc_reader::get(adc_reader::INDEX_ACTUATOR_1);
         data[2] = adc_reader::get(adc_reader::INDEX_ACTUATOR_2);
+        if (current_monitor)
+            printk("%8d %8d %8d\n", data[0], data[1], data[2]);
     }
     int32_t get_trolley() const {
         return adc_reader::get(adc_reader::INDEX_TROLLEY);
@@ -395,12 +402,61 @@ private:
     msg_actuator2ros actuator2ros;
     k_mutex service_mutex;
     uint32_t prev_cycle{0};
-    bool location_initialized{false};
+    bool location_initialized{false}, current_monitor{false};
     const device *dev_pwm[ACTUATOR_NUM][2]{{nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}};
     const device *dev_power{nullptr}, *dev_fail_01{nullptr}, *dev_fail_2{nullptr};
     static constexpr uint32_t CONTROL_HZ{5000};
     static constexpr uint32_t CONTROL_PERIOD_NS{1000000000ULL / CONTROL_HZ};
 } impl;
+
+static int cmd_act_init(const shell *shell, size_t argc, char **argv)
+{
+    impl.init_location();
+    return 0;
+}
+
+static int cmd_act_locate(const shell *shell, size_t argc, char **argv)
+{
+    uint8_t location[ACTUATOR_NUM]{0, 0, 0}, power[ACTUATOR_NUM]{0, 0, 0}, detail[ACTUATOR_NUM]{0, 0, 0};
+    if (argc < 3) {
+        shell_error(shell, "Usage: %s %s <location> <power> ...\n", argv[-1], argv[0]);
+        return 1;
+    } else if (argc == 3) {
+        location[0] = atoi(argv[1]);
+        power[0]    = atoi(argv[2]);
+    } else if (argc == 5) {
+        location[0] = atoi(argv[1]);
+        power[0]    = atoi(argv[2]);
+        location[1] = atoi(argv[3]);
+        power[1]    = atoi(argv[4]);
+    } else if (argc == 7) {
+        location[0] = atoi(argv[1]);
+        power[0]    = atoi(argv[2]);
+        location[1] = atoi(argv[3]);
+        power[1]    = atoi(argv[4]);
+        location[2] = atoi(argv[5]);
+        power[2]    = atoi(argv[6]);
+    } else {
+        shell_error(shell, "Usage: %s %s <location> <power> ...\n", argv[-1], argv[0]);
+        return 1;
+    }
+    impl.to_location(location, power, detail);
+    return 0;
+}
+
+static int cmd_act_current(const shell *shell, size_t argc, char **argv)
+{
+    impl.act_current();
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_act,
+    SHELL_CMD(init, NULL, "Actuator initialize command", cmd_act_init),
+    SHELL_CMD(loc, NULL, "Actuator locate command", cmd_act_locate),
+    SHELL_CMD(current, NULL, "Actuator current monitor", cmd_act_current),
+    SHELL_SUBCMD_SET_END
+);
+SHELL_CMD_REGISTER(act, &sub_act, "Actuator commands", NULL);
 
 }
 
