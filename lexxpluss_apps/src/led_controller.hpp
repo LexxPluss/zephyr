@@ -3,7 +3,7 @@
 #include <zephyr.h>
 
 struct msg_ros2led {
-    uint32_t pattern;
+    uint32_t pattern, interrupt_ms;
     uint8_t rgb[3];
     static constexpr uint32_t NONE{0};
     static constexpr uint32_t EMERGENCY_STOP{1};
@@ -18,6 +18,7 @@ struct msg_ros2led {
     static constexpr uint32_t RIGHT_WINKER{13};
     static constexpr uint32_t BOTH_WINKER{14};
     static constexpr uint32_t MOVE_ACTUATOR{15};
+    static constexpr uint32_t CHARGE_LEVEL{16};
     static constexpr uint32_t SHOWTIME{10000};
     static constexpr uint32_t RGB{10001};
 } __attribute__((aligned(4)));

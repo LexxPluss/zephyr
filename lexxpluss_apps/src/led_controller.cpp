@@ -1,6 +1,7 @@
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/led_strip.h>
+#include "can_controller.hpp"
 #include "led_controller.hpp"
 
 k_msgq msgq_ros2led;
@@ -9,11 +10,57 @@ namespace {
 
 char __aligned(4) msgq_ros2led_buffer[8 * sizeof (msg_ros2led)];
 
+class led_message {
+public:
+    led_message() {
+        message.pattern = msg_ros2led::SHOWTIME;
+        message.interrupt_ms = 0;
+    }
+    bool get_message(msg_ros2led &output) {
+        bool updated{false};
+        msg_ros2led message_new;
+        if (k_msgq_get(&msgq_ros2led, &message_new, K_MSEC(DELAY_MS)) == 0) {
+            if (message.interrupt_ms > 0) {
+                if (message_new.interrupt_ms > 0) {
+                    if (message.pattern != message_new.pattern) {
+                        message = message_new;
+                        updated = true;
+                    }
+                } else {
+                    message_interrupted = message_new;
+                }
+            } else {
+                if (message.pattern != message_new.pattern) {
+                    if (message_new.interrupt_ms > 0) {
+                        message_interrupted = message;
+                        cycle_interrupted = k_cycle_get_32();
+                    }
+                    message = message_new;
+                    updated = true;
+                }
+            }
+        }
+        if (message.interrupt_ms > 0) {
+            uint32_t delta_ms{k_cyc_to_ms_near32(k_cycle_get_32() - cycle_interrupted)};
+            if (delta_ms > message.interrupt_ms) {
+                message = message_interrupted;
+                message.interrupt_ms = 0;
+                updated = true;
+            }
+        }
+        output = message;
+        return updated;
+    }
+    static constexpr uint32_t DELAY_MS{25};
+private:
+    msg_ros2led message, message_interrupted;
+    uint32_t cycle_interrupted{0};
+};
+
 class led_controller_impl {
 public:
     int init() {
         k_msgq_init(&msgq_ros2led, msgq_ros2led_buffer, sizeof (msg_ros2led), 8);
-        message.pattern = msg_ros2led::SHOWTIME;
         dev[LED_LEFT] = device_get_binding("WS2812_0");
         dev[LED_RIGHT] = device_get_binding("WS2812_1");
         if (dev[LED_LEFT] == nullptr || dev[LED_RIGHT] == nullptr)
@@ -26,13 +73,14 @@ public:
         if (!device_is_ready(dev[LED_LEFT]) || !device_is_ready(dev[LED_RIGHT]))
             return;
         while (true) {
-            if (k_msgq_get(&msgq_ros2led, &message, K_MSEC(DELAY_MS)) == 0)
+            msg_ros2led message;
+            if (msg.get_message(message))
                 counter = 0;
-            poll();
+            poll(message);
         }
     }
 private:
-    void poll() {
+    void poll(const msg_ros2led &message) {
         switch (message.pattern) {
         default:
         case msg_ros2led::NONE:            fill(black); break;
@@ -48,6 +96,7 @@ private:
         case msg_ros2led::RIGHT_WINKER:    fill_blink_sequence(sequence, LED_RIGHT); break;
         case msg_ros2led::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
         case msg_ros2led::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
+        case msg_ros2led::CHARGE_LEVEL:    fill_charge_level(); break;
         case msg_ros2led::SHOWTIME:        fill_toggle(showtime); break;
         case msg_ros2led::RGB:             fill(led_rgb{.r{message.rgb[0]}, .g{message.rgb[1]}, .b{message.rgb[2]}}); break;
         }
@@ -68,12 +117,13 @@ private:
         }
     }
     void fill_strobe(const led_rgb &color, uint32_t nstrobe, uint32_t strobedelay, uint32_t endpause) {
-        if (counter < nstrobe * strobedelay / DELAY_MS) {
-            if ((counter % (strobedelay * 2 / DELAY_MS)) == 0)
+        static constexpr auto delay{led_message::DELAY_MS};
+        if (counter < nstrobe * strobedelay / delay) {
+            if ((counter % (strobedelay * 2 / delay)) == 0)
                 fill(color);
-            else if ((counter % (strobedelay * 2 / DELAY_MS)) == strobedelay / DELAY_MS)
+            else if ((counter % (strobedelay * 2 / delay)) == strobedelay / delay)
                 fill(black);
-        } else if (counter == (nstrobe * strobedelay + endpause) / DELAY_MS) {
+        } else if (counter == (nstrobe * strobedelay + endpause) / delay) {
             fill(black);
             counter = 0;
         }
@@ -136,6 +186,29 @@ private:
                 pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = c1;
         }
     }
+    void fill_charge_level() {
+        static constexpr uint32_t thres{40};
+        uint32_t head;
+        if (counter >= thres * 2)
+            counter = 0;
+        if (counter >= thres)
+            head = 0;
+        else
+            head = PIXELS - (PIXELS * counter / thres);
+        uint32_t rsoc{can_controller::get_rsoc()};
+        if (rsoc >= 100) {
+            static constexpr led_rgb color_full{.r{0x00}, .g{0xff}, .b{0x00}};
+            for (uint32_t i{0}; i < PIXELS; ++i)
+                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < head ? black : color_full;
+        } else {
+            static constexpr led_rgb color_charging{.r{0x00}, .g{0xff}, .b{0x10}};
+            uint32_t n{PIXELS - (PIXELS * rsoc / 100U)};
+            if (n < head)
+                n = head;
+            for (uint32_t i{0}; i < PIXELS; ++i)
+                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < n ? black : color_charging;
+        }
+    }
     led_rgb fader(const led_rgb &color, int percent) const {
         led_rgb color_;
         color_.r = color.r * percent / 100;
@@ -163,10 +236,9 @@ private:
         }
         return color;
     }
-    msg_ros2led message;
+    led_message msg;
     static constexpr uint32_t PIXELS{DT_PROP(DT_NODELABEL(led_strip0), chain_length)};
     static constexpr uint32_t LED_LEFT{0}, LED_RIGHT{1}, LED_BOTH{2}, LED_NUM{2};
-    static constexpr uint32_t DELAY_MS{25};
     const device *dev[LED_NUM]{nullptr, nullptr};
     led_rgb pixeldata[LED_NUM][PIXELS];
     uint32_t counter{0};

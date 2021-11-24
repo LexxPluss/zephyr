@@ -93,6 +93,9 @@ public:
                 k_msleep(1);
         }
     }
+    uint32_t get_rsoc() const {
+        return bmu2ros.rsoc;
+    }
 private:
     void setup_can_filter() const {
         static const zcan_filter filter_bmu{
@@ -233,6 +236,11 @@ void can_controller::init()
 void can_controller::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+}
+
+uint32_t can_controller::get_rsoc()
+{
+    return impl.get_rsoc();
 }
 
 k_thread can_controller::thread;
