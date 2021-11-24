@@ -28,13 +28,17 @@ private:
         else if (strcmp(req.data, "right_winker")    == 0) message.pattern = msg_ros2led::RIGHT_WINKER;
         else if (strcmp(req.data, "both_winker")     == 0) message.pattern = msg_ros2led::BOTH_WINKER;
         else if (strcmp(req.data, "move_actuator")   == 0) message.pattern = msg_ros2led::MOVE_ACTUATOR;
+        else if (strcmp(req.data, "charge_level")    == 0) message.pattern = msg_ros2led::CHARGE_LEVEL;
+        else if (strcmp(req.data, "showtime")        == 0) message.pattern = msg_ros2led::SHOWTIME;
         else                                               message.pattern = msg_ros2led::NONE;
+        message.interrupt_ms = 0;
         while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
             k_msgq_purge(&msgq_ros2led);
     }
     void callback_direct(const lexxauto_msgs::Led &req) {
         msg_ros2led message;
         message.pattern = msg_ros2led::RGB;
+        message.interrupt_ms = 0;
         message.rgb[0] = req.r;
         message.rgb[1] = req.g;
         message.rgb[2] = req.b;
