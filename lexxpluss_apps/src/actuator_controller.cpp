@@ -151,6 +151,11 @@ private:
 
 class location_calculator {
 public:
+    location_calculator() {
+        mm_per_pulse[0] = 50.0f / 1054.0f;
+        mm_per_pulse[1] = 50.0f / 538.0f;
+        mm_per_pulse[2] = 50.0f / 538.0f;
+    }
     int init() {
         reset();
         return helper.init();
@@ -166,12 +171,7 @@ public:
             update_pulse(i, d[i]);
     }
     int32_t get_location(int index) const {
-        int32_t location{static_cast<int32_t>(static_cast<float>(pulse_value[index]) / pulse_per_mm)};
-        if (location < 0)
-            location = 0;
-        if (location > LOCATION_MAX)
-            location = LOCATION_MAX;
-        return location;
+        return static_cast<float>(pulse_value[index]) * mm_per_pulse[index];
     }
     void get_pulse(int32_t value[ACTUATOR_NUM]) const {
         for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
@@ -185,18 +185,11 @@ public:
     }
 private:
     void update_pulse(int index, int pulse) {
-        int32_t n{pulse_value[index]};
-        n += -pulse;
-        // if (n < 0)
-        //     n = 0;
-        // if (n > PULSE_MAX)
-        //     n = PULSE_MAX;
-        pulse_value[index] = n;
+        pulse_value[index] += -pulse;
     }
     timer_hal_helper helper;
     int32_t pulse_value[ACTUATOR_NUM]{0, 0, 0}, prev_pulse_value[ACTUATOR_NUM]{0, 0, 0};
-    static constexpr int32_t PULSE_MAX{300}, LOCATION_MAX{50};
-    static constexpr float pulse_per_mm{static_cast<float>(PULSE_MAX) / static_cast<float>(LOCATION_MAX)};
+    float mm_per_pulse[ACTUATOR_NUM];
 };
 
 static const struct {
@@ -285,13 +278,14 @@ public:
         if (k_mutex_lock(&service_mutex, K_MSEC(30000)) != 0)
             return -1;
         pwm_control_all(msg_ros2actuator::DOWN, 100);
-        k_msleep(1000);
         static constexpr uint32_t timeout_ms{30000}, sleep_ms{500};
         int remaining{3};
         for (uint32_t i{0}, end{timeout_ms / sleep_ms}; i < end; ++i) {
+            int32_t value[ACTUATOR_NUM];
+            calculator.get_delta_pulse(value);
             remaining = 3;
             for (uint32_t j{0}; j < ACTUATOR_NUM; ++j) {
-                if (actuator2ros.encoder_count[j] == 0) {
+                if (i >= 2 && value[j] == 0) {
                     pwm_control(j, msg_ros2actuator::STOP, 0);
                     --remaining;
                 }
@@ -330,19 +324,22 @@ public:
                 detail[i] = 0;
             }
         }
-        static constexpr uint32_t timeout_ms{30000}, sleep_ms{10};
+        static constexpr uint32_t timeout_ms{30000}, sleep_ms{20};
         int remaining{3};
         for (uint32_t i{0}, end{timeout_ms / sleep_ms}; i < end; ++i) {
+            int32_t value[ACTUATOR_NUM];
+            calculator.get_delta_pulse(value);
             remaining = 3;
             for (uint32_t j{0}; j < ACTUATOR_NUM; ++j) {
                 int32_t diff{static_cast<int32_t>(location[j]) - calculator.get_location(j)};
                 if ((direction[j] == msg_ros2actuator::DOWN && diff >= 0) ||
-                    (direction[j] == msg_ros2actuator::UP   && diff <= 0)) {
-                    direction[i] = msg_ros2actuator::STOP;
-                    pwm_control(j, direction[i], 0);
-                    detail[i] = 0;
+                    (direction[j] == msg_ros2actuator::UP   && diff <= 0) ||
+                    (direction[j] != msg_ros2actuator::STOP && i >= 5 && value[j] == 0)) {
+                    direction[j] = msg_ros2actuator::STOP;
+                    pwm_control(j, msg_ros2actuator::STOP, 0);
+                    detail[j] = 0;
                     --remaining;
-                } else if (direction[i] == msg_ros2actuator::STOP) {
+                } else if (direction[j] == msg_ros2actuator::STOP) {
                     --remaining;
                 }
             }
