@@ -3,6 +3,7 @@
 #include <drivers/can.h>
 #include <drivers/gpio.h>
 #include "can_controller.hpp"
+#include "led_controller.hpp"
 #include "misc_controller.hpp"
 
 k_msgq msgq_bmu2ros;
@@ -109,7 +110,7 @@ private:
             .id{0x200},
             .rtr{CAN_DATAFRAME},
             .id_type{CAN_STANDARD_IDENTIFIER},
-            .id_mask{CAN_STD_ID_MASK},
+            .id_mask{0x7fc},
             .rtr_mask{1}
         };
         static const zcan_filter filter_log{
@@ -177,27 +178,38 @@ private:
         return result;
     }
     void handler_board(zcan_frame &frame) {
-        board2ros.bumper_switch[0] = (frame.data[0] & 0b00001000) != 0;
-        board2ros.bumper_switch[1] = (frame.data[0] & 0b00010000) != 0;
-        board2ros.emergency_switch[0] = (frame.data[0] & 0b00000010) != 0;
-        board2ros.emergency_switch[1] = (frame.data[0] & 0b00000100) != 0;
-        board2ros.power_switch = (frame.data[0] & 0b00000001) != 0;
-        board2ros.auto_charging = (frame.data[1] & 0b00000010) != 0;
-        board2ros.manual_charging = (frame.data[1] & 0b00000001) != 0;
-        board2ros.c_fet = (frame.data[2] & 0b00010000) != 0;
-        board2ros.d_fet = (frame.data[2] & 0b00100000) != 0;
-        board2ros.p_dsg = (frame.data[2] & 0b01000000) != 0;
-        board2ros.v5_fail = (frame.data[2] & 0b00000001) != 0;
-        board2ros.v16_fail = (frame.data[2] & 0b00000010) != 0;
-        board2ros.wheel_disable[0] = (frame.data[3] & 0b00000001) != 0;
-        board2ros.wheel_disable[1] = (frame.data[3] & 0b00000010) != 0;
-        board2ros.fan_duty = frame.data[4];
-        board2ros.charge_connector_temp[0] = frame.data[5];
-        board2ros.charge_connector_temp[1] = frame.data[6];
-        board2ros.power_board_temp = frame.data[7];
-        board2ros.main_board_temp = misc_controller::get_main_board_temp();
-        for (auto i{0}; i < 3; ++i)
-            board2ros.actuator_board_temp[i] = misc_controller::get_actuator_board_temp(i);
+        if (frame.id == 0x200) {
+            board2ros.bumper_switch[0] = (frame.data[0] & 0b00001000) != 0;
+            board2ros.bumper_switch[1] = (frame.data[0] & 0b00010000) != 0;
+            board2ros.emergency_switch[0] = (frame.data[0] & 0b00000010) != 0;
+            board2ros.emergency_switch[1] = (frame.data[0] & 0b00000100) != 0;
+            board2ros.power_switch = (frame.data[0] & 0b00000001) != 0;
+            board2ros.auto_charging = (frame.data[1] & 0b00000010) != 0;
+            board2ros.manual_charging = (frame.data[1] & 0b00000001) != 0;
+            board2ros.c_fet = (frame.data[2] & 0b00010000) != 0;
+            board2ros.d_fet = (frame.data[2] & 0b00100000) != 0;
+            board2ros.p_dsg = (frame.data[2] & 0b01000000) != 0;
+            board2ros.v5_fail = (frame.data[2] & 0b00000001) != 0;
+            board2ros.v16_fail = (frame.data[2] & 0b00000010) != 0;
+            board2ros.wheel_disable[0] = (frame.data[3] & 0b00000001) != 0;
+            board2ros.wheel_disable[1] = (frame.data[3] & 0b00000010) != 0;
+            board2ros.fan_duty = frame.data[4];
+            board2ros.charge_connector_temp[0] = frame.data[5];
+            board2ros.charge_connector_temp[1] = frame.data[6];
+            board2ros.power_board_temp = frame.data[7];
+            board2ros.main_board_temp = misc_controller::get_main_board_temp();
+            for (auto i{0}; i < 3; ++i)
+                board2ros.actuator_board_temp[i] = misc_controller::get_actuator_board_temp(i);
+        } else if (frame.id == 0x202) {
+            if (frame.data[0] == 1) {
+                msg_ros2led message{
+                    .pattern = msg_ros2led::CHARGE_LEVEL,
+                    .interrupt_ms = 2000
+                };
+                while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
+                    k_msgq_purge(&msgq_ros2led);
+            }
+        }
     }
     void handler_log(zcan_frame &frame) {
         for (uint32_t i{0}; i < frame.dlc; ++i) {
