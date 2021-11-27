@@ -103,7 +103,7 @@ private:
             .id{0x100},
             .rtr{CAN_DATAFRAME},
             .id_type{CAN_STANDARD_IDENTIFIER},
-            .id_mask{0x1c0},
+            .id_mask{0x7c0},
             .rtr_mask{1}
         };
         static const zcan_filter filter_board{
