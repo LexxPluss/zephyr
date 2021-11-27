@@ -15,6 +15,7 @@ public:
 private:
     void callback_location(const lexxauto_msgs::LinearActuatorLocationRequest &req, lexxauto_msgs::LinearActuatorLocationResponse &res) {
         res.success = actuator_controller::to_location(req.location.data, req.power.data, res_detail_data) == 0;
+        res.detail.data = res_detail_data;
         res.detail.data_length = sizeof res_detail_data / sizeof res_detail_data[0];
     }
     void callback_init(const lexxauto_msgs::InitLinearActuatorRequest &req, lexxauto_msgs::InitLinearActuatorResponse &res) {
