@@ -2,9 +2,9 @@
 #include <device.h>
 #include <drivers/can.h>
 #include <drivers/gpio.h>
-#include "can_controller.hpp"
 #include "led_controller.hpp"
 #include "misc_controller.hpp"
+#include "can_controller.hpp"
 
 k_msgq msgq_bmu2ros;
 k_msgq msgq_board2ros;
