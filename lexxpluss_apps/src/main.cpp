@@ -66,8 +66,8 @@ void main()
     RUN(pgv_controller, 1);
     RUN(tof_controller, 2);
     RUN(uss_controller, 2);
-    RUN(rosserial, 3); // The rosserial thread will be started last.
-    RUN(rosserial_service, 5); // The rosserial thread will be started last.
+    RUN(rosserial, 5); // The rosserial thread will be started last.
+    RUN(rosserial_service, 6); // The rosserial thread will be started last.
     const device *gpiog = device_get_binding("GPIOG");
     if (gpiog != nullptr)
         gpio_pin_configure(gpiog, 12, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
