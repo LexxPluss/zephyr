@@ -14,7 +14,7 @@ public:
         uart_dev = device_get_binding(name);
         if (uart_dev != nullptr) {
             uart_config config{
-                .baudrate{921600},
+                .baudrate{baudrate},
                 .parity{UART_CFG_PARITY_NONE},
                 .stop_bits{UART_CFG_STOP_BITS_1},
                 .data_bits{UART_CFG_DATA_BITS_8},
@@ -26,6 +26,9 @@ public:
             uart_irq_callback_user_data_set(uart_dev, uart_isr_trampoline, this);
             uart_irq_rx_enable(uart_dev);
         }
+    }
+    void set_baudrate(uint32_t baudrate) {
+        this->baudrate = baudrate;
     }
     int read() {
         uint8_t c;
@@ -71,6 +74,7 @@ private:
         ring_buf rx, tx;
         uint8_t rbuf[1024], tbuf[1024];
     } ringbuf;
+    uint32_t baudrate{57600};
     const device* uart_dev{nullptr};
 };
 

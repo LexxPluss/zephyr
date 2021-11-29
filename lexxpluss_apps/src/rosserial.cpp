@@ -14,6 +14,7 @@ namespace {
 class rosserial_impl {
 public:
     int init() {
+        nh.getHardware()->set_baudrate(921600);
         nh.initNode(const_cast<char*>("UART_1"));
         actuator.init(nh);
         bmu.init(nh);
