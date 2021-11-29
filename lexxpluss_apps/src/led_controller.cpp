@@ -1,6 +1,7 @@
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/led_strip.h>
+#include <logging/log.h>
 #include <shell/shell.h>
 #include <cstdlib>
 #include "can_controller.hpp"
@@ -9,6 +10,8 @@
 k_msgq msgq_ros2led;
 
 namespace {
+
+LOG_MODULE_REGISTER(led);
 
 char __aligned(4) msgq_ros2led_buffer[8 * sizeof (msg_ros2led)];
 
@@ -34,6 +37,7 @@ public:
             } else {
                 if (message.pattern != message_new.pattern) {
                     if (message_new.interrupt_ms > 0) {
+                        LOG_INF("interrupted pattern %u %ums", message_new.pattern, message_new.interrupt_ms);
                         message_interrupted = message;
                         cycle_interrupted = k_cycle_get_32();
                     }

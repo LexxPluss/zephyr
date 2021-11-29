@@ -1,6 +1,7 @@
 #include <device.h>
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
+#include <logging/log.h>
 #include <shell/shell.h>
 #include <cstdlib>
 #include "adc_reader.hpp"
@@ -43,6 +44,8 @@ extern "C" void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim_encoder)
 }
 
 namespace {
+
+LOG_MODULE_REGISTER(actuator);
 
 char __aligned(4) msgq_actuator2ros_buffer[8 * sizeof (msg_actuator2ros)];
 char __aligned(4) msgq_ros2actuator_buffer[8 * sizeof (msg_ros2actuator)];
@@ -276,9 +279,12 @@ public:
         calculator.reset();
     }
     int init_location() {
+        LOG_INF("initialize location.");
         location_initialized = false;
-        if (k_mutex_lock(&service_mutex, K_MSEC(30000)) != 0)
+        if (k_mutex_lock(&service_mutex, K_MSEC(30000)) != 0) {
+            LOG_WRN("can not lock mutex.");
             return -1;
+        }
         pwm_control_all(msg_ros2actuator::DOWN, 100);
         static constexpr uint32_t timeout_ms{30000}, sleep_ms{500};
         int remaining{3};
@@ -303,17 +309,22 @@ public:
             location_initialized = true;
             return 0;
         } else {
+            LOG_WRN("can not initialize location.");
             return -1;
         }
     }
     int to_location(const uint8_t location[ACTUATOR_NUM], const uint8_t power[ACTUATOR_NUM], uint8_t detail[ACTUATOR_NUM]) {
+        LOG_INF("move location.");
         if (!location_initialized) {
             for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
                 detail[i] = 3;
+            LOG_WRN("location not initialized.");
             return -1;
         }
-        if (k_mutex_lock(&service_mutex, K_MSEC(30000)) != 0)
+        if (k_mutex_lock(&service_mutex, K_MSEC(30000)) != 0) {
+            LOG_WRN("can not lock mutex.");
             return -1;
+        }
         int direction[ACTUATOR_NUM];
         for (uint32_t i{0}; i < ACTUATOR_NUM; ++i) {
             if (power[i] != 0) {
@@ -351,7 +362,12 @@ public:
         }
         pwm_control_all(msg_ros2actuator::STOP);
         k_mutex_unlock(&service_mutex);
-        return remaining <= 0 ? 0 : -1;
+        if (remaining <= 0) {
+            return 0;
+        } else {
+            LOG_WRN("unable to move location.");
+            return -1;
+        }
     }
     void act_current() {
         current_monitor = !current_monitor;
@@ -388,7 +404,7 @@ private:
         data[1] = adc_reader::get(adc_reader::INDEX_ACTUATOR_1);
         data[2] = adc_reader::get(adc_reader::INDEX_ACTUATOR_2);
         if (current_monitor)
-            printk("%8d %8d %8d\n", data[0], data[1], data[2]);
+            LOG_INF("current: %8d %8d %8d", data[0], data[1], data[2]);
     }
     int32_t get_trolley() const {
         return adc_reader::get(adc_reader::INDEX_TROLLEY);
