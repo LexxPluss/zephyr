@@ -202,10 +202,7 @@ private:
                 board2ros.actuator_board_temp[i] = misc_controller::get_actuator_board_temp(i);
         } else if (frame.id == 0x202) {
             if (frame.data[0] == 1) {
-                msg_ros2led message{
-                    .pattern = msg_ros2led::CHARGE_LEVEL,
-                    .interrupt_ms = 2000
-                };
+                msg_ros2led message{msg_ros2led::CHARGE_LEVEL, 2000};
                 while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_ros2led);
             }
