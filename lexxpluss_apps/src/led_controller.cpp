@@ -188,26 +188,25 @@ private:
     }
     void fill_charge_level() {
         static constexpr uint32_t thres{40};
-        uint32_t head;
         if (counter >= thres * 2)
             counter = 0;
+        uint32_t head;
         if (counter >= thres)
             head = 0;
         else
             head = PIXELS - (PIXELS * counter / thres);
+        static constexpr led_rgb color{.r{0xff}, .g{0x45}, .b{0x00}};
         uint32_t rsoc{can_controller::get_rsoc()};
-        if (rsoc >= 100) {
-            static constexpr led_rgb color_full{.r{0x00}, .g{0xff}, .b{0x00}};
-            for (uint32_t i{0}; i < PIXELS; ++i)
-                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < head ? black : color_full;
-        } else {
-            static constexpr led_rgb color_charging{.r{0x00}, .g{0xff}, .b{0x10}};
-            uint32_t n{PIXELS - (PIXELS * rsoc / 100U)};
+        uint32_t n;
+        if (rsoc < 100) {
+            n = PIXELS - (PIXELS * rsoc / 100U);
             if (n < head)
                 n = head;
-            for (uint32_t i{0}; i < PIXELS; ++i)
-                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < n ? black : color_charging;
+        } else {
+            n = head;
         }
+        for (uint32_t i{0}; i < PIXELS; ++i)
+            pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < n ? black : color;
     }
     led_rgb fader(const led_rgb &color, int percent) const {
         led_rgb color_;
