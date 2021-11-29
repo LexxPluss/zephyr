@@ -1,6 +1,8 @@
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/led_strip.h>
+#include <shell/shell.h>
+#include <cstdlib>
 #include "can_controller.hpp"
 #include "led_controller.hpp"
 
@@ -257,6 +259,40 @@ const led_rgb led_controller_impl::sequence       {.r{0x90}, .g{0x20}, .b{0x00}}
 const led_rgb led_controller_impl::move_actuator  {.r{0x45}, .g{0xff}, .b{0x00}};
 const led_rgb led_controller_impl::showtime       {.r{0x0f}, .g{0xb6}, .b{0xc8}};
 const led_rgb led_controller_impl::black          {.r{0x00}, .g{0x00}, .b{0x00}};
+
+static int cmd_led_pattern(const shell *shell, size_t argc, char **argv)
+{
+    if (argc != 2) {
+        shell_error(shell, "Usage: %s %s <pattern>\n", argv[-1], argv[0]);
+        return 1;
+    }
+    msg_ros2led message{argv[1]};
+    while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
+        k_msgq_purge(&msgq_ros2led);
+    return 0;
+}
+
+static int cmd_led_color(const shell *shell, size_t argc, char **argv)
+{
+    if (argc != 4) {
+        shell_error(shell, "Usage: %s %s <r> <g> <b>\n", argv[-1], argv[0]);
+        return 1;
+    }
+    msg_ros2led message{msg_ros2led::RGB, 0};
+    message.rgb[0] = atoi(argv[1]);
+    message.rgb[1] = atoi(argv[2]);
+    message.rgb[2] = atoi(argv[3]);
+    while (k_msgq_put(&msgq_ros2led, &message, K_NO_WAIT) != 0)
+        k_msgq_purge(&msgq_ros2led);
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_led,
+    SHELL_CMD(pattern, NULL, "LED pattern command", cmd_led_pattern),
+    SHELL_CMD(color, NULL, "LED color command", cmd_led_color),
+    SHELL_SUBCMD_SET_END
+);
+SHELL_CMD_REGISTER(led, &sub_led, "LED commands", NULL);
 
 }
 
