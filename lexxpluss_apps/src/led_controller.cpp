@@ -27,7 +27,7 @@ public:
         if (k_msgq_get(&msgq_ros2led, &message_new, K_MSEC(DELAY_MS)) == 0) {
             if (message.interrupt_ms > 0) {
                 if (message_new.interrupt_ms > 0) {
-                    if (message.pattern != message_new.pattern) {
+                    if (is_new_pattern(message_new.pattern)) {
                         message = message_new;
                         updated = true;
                     }
@@ -35,7 +35,7 @@ public:
                     message_interrupted = message_new;
                 }
             } else {
-                if (message.pattern != message_new.pattern) {
+                if (is_new_pattern(message_new.pattern)) {
                     if (message_new.interrupt_ms > 0) {
                         LOG_INF("interrupted pattern %u %ums", message_new.pattern, message_new.interrupt_ms);
                         message_interrupted = message;
@@ -59,6 +59,9 @@ public:
     }
     static constexpr uint32_t DELAY_MS{25};
 private:
+    bool is_new_pattern(uint32_t pattern) {
+        return pattern == msg_ros2led::RGB || message.pattern != pattern;
+    }
     msg_ros2led message, message_interrupted;
     uint32_t cycle_interrupted{0};
 };
