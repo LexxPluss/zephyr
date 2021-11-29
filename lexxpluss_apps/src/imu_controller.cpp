@@ -7,7 +7,7 @@ k_msgq msgq_imu2ros;
 
 namespace {
 
-LOG_MODULE_REGISTER(imu_controller, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(imu);
 
 char __aligned(4) msgq_imu2ros_buffer[8 * sizeof (msg_imu2ros)];
 
