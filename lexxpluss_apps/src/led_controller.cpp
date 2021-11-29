@@ -99,7 +99,7 @@ private:
         case msg_ros2led::BOTH_WINKER:     fill_blink_sequence(sequence, LED_BOTH); break;
         case msg_ros2led::MOVE_ACTUATOR:   fill_strobe(move_actuator, 10, 200, 200); break;
         case msg_ros2led::CHARGE_LEVEL:    fill_charge_level(); break;
-        case msg_ros2led::SHOWTIME:        fill_toggle(showtime); break;
+        case msg_ros2led::SHOWTIME:        fill_knight_industries_two_thousand(); break;
         case msg_ros2led::RGB:             fill(led_rgb{.r{message.rgb[0]}, .g{message.rgb[1]}, .b{message.rgb[2]}}); break;
         }
         update();
@@ -209,6 +209,32 @@ private:
         }
         for (uint32_t i{0}; i < PIXELS; ++i)
             pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < n ? black : color;
+    }
+    void fill_knight_industries_two_thousand() {
+        if (counter >= PIXELS * 2)
+            counter = 0;
+        bool back{counter >= PIXELS};
+        int32_t pos;
+        if (back)
+            pos = PIXELS * 2 - counter;
+        else
+            pos = counter;
+        for (int32_t i{0}, end{PIXELS}; i < end; ++i) {
+            static constexpr int32_t width{10};
+            bool no_color;
+            if (back)
+                no_color = i < pos || i > pos + width;
+            else
+                no_color = i < pos - width || i > pos;
+            if (no_color) {
+                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = black;
+            } else {
+                static constexpr led_rgb color{.r{0xff}, .g{0x00}, .b{0x00}};
+                int percent{(width - abs(pos - i)) * 100 / width};
+                led_rgb dimmed{fader(color, percent)};
+                pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = dimmed;
+            }
+        }
     }
     led_rgb fader(const led_rgb &color, int percent) const {
         led_rgb color_;
