@@ -211,16 +211,16 @@ private:
             pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = i < n ? black : color;
     }
     void fill_knight_industries_two_thousand() {
-        if (counter >= PIXELS * 2)
+        static constexpr int32_t width{20};
+        if (counter >= (PIXELS + width) * 2)
             counter = 0;
-        bool back{counter >= PIXELS};
+        bool back{counter >= PIXELS + width};
         int32_t pos;
         if (back)
-            pos = PIXELS * 2 - counter;
+            pos = (PIXELS + width) * 2 - counter - width;
         else
             pos = counter;
         for (int32_t i{0}, end{PIXELS}; i < end; ++i) {
-            static constexpr int32_t width{10};
             bool no_color;
             if (back)
                 no_color = i < pos || i > pos + width;
@@ -230,8 +230,9 @@ private:
                 pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = black;
             } else {
                 static constexpr led_rgb color{.r{0xff}, .g{0x00}, .b{0x00}};
-                int percent{(width - abs(pos - i)) * 100 / width};
-                led_rgb dimmed{fader(color, percent)};
+                int gain{(width - abs(pos - i)) * 100 / width};
+                gain = gain * gain * gain / 100 / 100;
+                led_rgb dimmed{fader(color, gain)};
                 pixeldata[LED_LEFT][i] = pixeldata[LED_RIGHT][i] = dimmed;
             }
         }
