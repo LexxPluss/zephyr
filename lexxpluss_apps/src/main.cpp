@@ -7,6 +7,7 @@
 #include "led_controller.hpp"
 #include "misc_controller.hpp"
 #include "pgv_controller.hpp"
+#include "rosdiagnostic.hpp"
 #include "rosserial.hpp"
 #include "rosserial_service.hpp"
 #include "tof_controller.hpp"
@@ -53,6 +54,7 @@ void main()
     led_controller::init();
     misc_controller::init();
     pgv_controller::init();
+    rosdiagnostic::init();
     rosserial::init();
     rosserial_service::init();
     tof_controller::init();

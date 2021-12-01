@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include "can_controller.hpp"
 #include "led_controller.hpp"
+#include "rosdiagnostic.hpp"
 
 k_msgq msgq_ros2led;
 
@@ -86,6 +87,14 @@ public:
             if (msg.get_message(message))
                 counter = 0;
             poll(message);
+        }
+    }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "led", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
         }
     }
 private:
@@ -338,6 +347,7 @@ void led_controller::init()
 void led_controller::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+    impl.run_error();
 }
 
 k_thread led_controller::thread;

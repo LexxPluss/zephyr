@@ -5,6 +5,7 @@
 #include "led_controller.hpp"
 #include "misc_controller.hpp"
 #include "can_controller.hpp"
+#include "rosdiagnostic.hpp"
 
 k_msgq msgq_bmu2ros;
 k_msgq msgq_board2ros;
@@ -92,6 +93,14 @@ public:
             }
             if (!handled)
                 k_msleep(1);
+        }
+    }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "can", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
         }
     }
     uint32_t get_rsoc() const {
@@ -245,6 +254,7 @@ void can_controller::init()
 void can_controller::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+    impl.run_error();
 }
 
 uint32_t can_controller::get_rsoc()

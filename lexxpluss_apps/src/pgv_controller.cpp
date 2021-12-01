@@ -4,6 +4,7 @@
 #include <drivers/uart.h>
 #include <sys/ring_buffer.h>
 #include "pgv_controller.hpp"
+#include "rosdiagnostic.hpp"
 
 k_msgq msgq_pgv2ros;
 k_msgq msgq_ros2pgv;
@@ -79,6 +80,14 @@ public:
                 recv(buf, sizeof buf);
             }
             k_msleep(10);
+        }
+    }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "pgv", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
         }
     }
 private:
@@ -244,6 +253,7 @@ void pgv_controller::init()
 void pgv_controller::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+    impl.run_error();
 }
 
 k_thread pgv_controller::thread;

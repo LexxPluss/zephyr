@@ -1,6 +1,7 @@
 #include <device.h>
 #include <drivers/i2c.h>
 #include "misc_controller.hpp"
+#include "rosdiagnostic.hpp"
 
 namespace {
 
@@ -34,6 +35,14 @@ public:
             k_msleep(100);
         }
     }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "misc", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
+        }
+    }
     float get_main_board_temp() const {return temperature[0];}
     float get_actuator_board_temp(int index) const {return temperature[index];}
 private:
@@ -53,6 +62,7 @@ void misc_controller::init()
 void misc_controller::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+    impl.run_error();
 }
 
 float misc_controller::get_main_board_temp()
