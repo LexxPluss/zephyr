@@ -2,6 +2,7 @@
 #include <device.h>
 #include <drivers/can.h>
 #include <drivers/gpio.h>
+#include <logging/log.h>
 #include "led_controller.hpp"
 #include "misc_controller.hpp"
 #include "can_controller.hpp"
@@ -12,6 +13,8 @@ k_msgq msgq_board2ros;
 k_msgq msgq_ros2board;
 
 namespace {
+
+LOG_MODULE_REGISTER(can);
 
 char __aligned(4) msgq_bmu2ros_buffer[8 * sizeof (msg_bmu2ros)];
 char __aligned(4) msgq_board2ros_buffer[8 * sizeof (msg_board2ros)];
@@ -24,10 +27,11 @@ CAN_DEFINE_MSGQ(msgq_can_log, 8);
 class log_printer {
 public:
     void putc(char c) {
-        buffer[index++] = c;
+        if (c != '\n')
+            buffer[index++] = c;
         if (c == '\n' || index >= 80) {
             buffer[index] = '\0';
-            printk("%s", buffer);
+            LOG_INF("%s", log_strdup(buffer));
             index = 0;
         }
     }

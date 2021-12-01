@@ -1,10 +1,13 @@
 #include <zephyr.h>
+#include <logging/log.h>
 #include "adc_reader.hpp"
 #include "tof_controller.hpp"
 
 k_msgq msgq_tof2ros;
 
 namespace {
+
+LOG_MODULE_REGISTER(tof);
 
 char __aligned(4) msgq_tof2ros_buffer[8 * sizeof (msg_tof2ros)];
 

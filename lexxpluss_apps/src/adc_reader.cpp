@@ -1,9 +1,12 @@
 #include <device.h>
 #include <drivers/adc.h>
+#include <logging/log.h>
 #include "adc_reader.hpp"
 #include "rosdiagnostic.hpp"
 
 namespace {
+
+LOG_MODULE_REGISTER(adc);
 
 class adc_reader_impl {
 public:

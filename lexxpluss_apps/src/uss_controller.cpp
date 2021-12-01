@@ -1,12 +1,15 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/sensor.h>
+#include <logging/log.h>
 #include "rosdiagnostic.hpp"
 #include "uss_controller.hpp"
 
 k_msgq msgq_uss2ros;
 
 namespace {
+
+LOG_MODULE_REGISTER(uss);
 
 char __aligned(4) msgq_uss2ros_buffer[8 * sizeof (msg_uss2ros)];
 
