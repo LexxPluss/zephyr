@@ -24,7 +24,7 @@ struct msg_board2ros {
     uint8_t fan_duty;
     bool bumper_switch[2];
     bool emergency_switch[2];
-    bool power_switch, auto_charging, manual_charging;
+    bool power_switch, wait_shutdown, auto_charging, manual_charging;
     bool c_fet, d_fet, p_dsg, v5_fail, v16_fail;
     bool wheel_disable[2];
 } __attribute__((aligned(4)));

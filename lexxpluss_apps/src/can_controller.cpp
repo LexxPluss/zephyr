@@ -197,6 +197,7 @@ private:
             board2ros.emergency_switch[0] = (frame.data[0] & 0b00000010) != 0;
             board2ros.emergency_switch[1] = (frame.data[0] & 0b00000100) != 0;
             board2ros.power_switch = (frame.data[0] & 0b00000001) != 0;
+            board2ros.wait_shutdown = (frame.data[1] & 0b10000000) != 0;
             board2ros.auto_charging = (frame.data[1] & 0b00000010) != 0;
             board2ros.manual_charging = (frame.data[1] & 0b00000001) != 0;
             board2ros.c_fet = (frame.data[2] & 0b00010000) != 0;
