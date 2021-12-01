@@ -213,7 +213,7 @@ private:
             head = 0;
         else
             head = PIXELS - (PIXELS * counter / thres);
-        static constexpr led_rgb color{.r{0xff}, .g{0x45}, .b{0x00}};
+        static constexpr led_rgb color{.r{0xff}, .g{0x20}, .b{0x00}};
         uint32_t rsoc{can_controller::get_rsoc()};
         uint32_t n;
         if (rsoc < 100) {
