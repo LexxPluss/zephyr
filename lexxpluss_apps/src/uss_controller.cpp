@@ -2,6 +2,7 @@
 #include <device.h>
 #include <drivers/sensor.h>
 #include <logging/log.h>
+#include <shell/shell.h>
 #include "rosdiagnostic.hpp"
 #include "uss_controller.hpp"
 
@@ -109,7 +110,29 @@ public:
             k_msleep(100);
         }
     }
+    void info(const shell *shell) const {
+        uint32_t front[2], left[2], right[2], back[2];
+        fetcher[0].get_distance(front);
+        fetcher[1].get_distance(left);
+        fetcher[2].get_distance(right);
+        fetcher[3].get_distance(back);
+        shell_print(shell, "FL:%umm FR:%umm L:%umm R:%umm B:%umm\n",
+                    front[0], front[1],
+                    left[0], right[0], back[0]);
+    }
 } impl;
+
+static int cmd_info(const shell *shell, size_t argc, char **argv)
+{
+    impl.info(shell);
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_uss,
+    SHELL_CMD(info, NULL, "USS information", cmd_info),
+    SHELL_SUBCMD_SET_END
+);
+SHELL_CMD_REGISTER(uss, &sub_uss, "USS commands", NULL);
 
 }
 

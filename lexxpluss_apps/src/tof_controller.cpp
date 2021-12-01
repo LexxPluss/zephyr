@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <logging/log.h>
+#include <shell/shell.h>
 #include "adc_reader.hpp"
 #include "tof_controller.hpp"
 
@@ -27,7 +28,24 @@ public:
             k_msleep(20);
         }
     }
+    void info(const shell *shell) const {
+        shell_print(shell, "L:%dmV R:%dmV",
+                    adc_reader::get(adc_reader::INDEX_DOWNWARD_L),
+                    adc_reader::get(adc_reader::INDEX_DOWNWARD_R));
+    }
 } impl;
+
+static int cmd_info(const shell *shell, size_t argc, char **argv)
+{
+    impl.info(shell);
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_tof,
+    SHELL_CMD(info, NULL, "ToF information", cmd_info),
+    SHELL_SUBCMD_SET_END
+);
+SHELL_CMD_REGISTER(tof, &sub_tof, "ToF commands", NULL);
 
 }
 

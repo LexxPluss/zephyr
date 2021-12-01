@@ -3,6 +3,7 @@
 #include <drivers/gpio.h>
 #include <drivers/uart.h>
 #include <logging/log.h>
+#include <shell/shell.h>
 #include <sys/ring_buffer.h>
 #include "pgv_controller.hpp"
 #include "rosdiagnostic.hpp"
@@ -64,7 +65,6 @@ public:
         while (true) {
             gpio_pin_set(dev_en, 13, heartbeat_led);
             heartbeat_led = !heartbeat_led;
-            msg_pgv2ros pgv2ros;
             if (get_position(pgv2ros)) {
                 while (k_msgq_put(&msgq_pgv2ros, &pgv2ros, K_NO_WAIT) != 0)
                     k_msgq_purge(&msgq_pgv2ros);
@@ -92,6 +92,13 @@ public:
                 k_msgq_purge(&msgq_rosdiag);
             k_msleep(5000);
         }
+    }
+    void info(const shell *shell) const {
+        msg_pgv2ros m{pgv2ros};
+        shell_print(shell,
+                    "x: %umm %dmm\n"
+                    "y: %dmm\n"
+                    "ang: %udeg", m.xp, m.xps, m.yps, m.ang);
     }
 private:
     enum class DIR {
@@ -243,8 +250,21 @@ private:
         uint32_t buf[256 / sizeof (uint32_t)];
     } txbuf, rxbuf;
     const device *dev_485{nullptr}, *dev_en{nullptr};
+    msg_pgv2ros pgv2ros;
     k_sem sem;
 } impl;
+
+static int cmd_info(const shell *shell, size_t argc, char **argv)
+{
+    impl.info(shell);
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_pgv,
+    SHELL_CMD(info, NULL, "PGV information", cmd_info),
+    SHELL_SUBCMD_SET_END
+);
+SHELL_CMD_REGISTER(pgv, &sub_pgv, "PGV commands", NULL);
 
 }
 
