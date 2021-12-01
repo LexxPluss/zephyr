@@ -17,6 +17,7 @@ public:
         nh.advertise(pub_emergency);
         nh.advertise(pub_charge);
         nh.advertise(pub_temperature);
+        nh.advertise(pub_power);
         nh.subscribe(sub_emergency);
         nh.subscribe(sub_poweroff);
         msg_fan.data = msg_fan_data;
@@ -32,6 +33,7 @@ public:
             publish_emergency(message);
             publish_charge(message);
             publish_temperature(message);
+            publish_power(message);
         }
     }
 private:
@@ -67,6 +69,10 @@ private:
         msg_temperature.charge_minus.temperature = message.charge_connector_temp[1];
         pub_temperature.publish(&msg_temperature);
     }
+    void publish_power(const msg_board2ros &message) {
+        msg_power.data = message.wait_shutdown ? 1 : 0;
+        pub_power.publish(&msg_power);
+    }
     void callback_emergency(const std_msgs::Bool &req) {
         ros2board.emergency_stop = req.data;
         while (k_msgq_put(&msgq_ros2board, &ros2board, K_NO_WAIT) != 0)
@@ -80,7 +86,7 @@ private:
     std_msgs::UInt8MultiArray msg_fan;
     std_msgs::ByteMultiArray msg_bumper;
     std_msgs::Bool msg_emergency;
-    std_msgs::Byte msg_charge;
+    std_msgs::Byte msg_charge, msg_power;
     lexxauto_msgs::BoardTemperatures msg_temperature;
     msg_ros2board ros2board{0};
     uint8_t msg_fan_data[1];
@@ -90,6 +96,7 @@ private:
     ros::Publisher pub_emergency{"/sensor_set/emergency_switch", &msg_emergency};
     ros::Publisher pub_charge{"/body_control/charge_status", &msg_charge};
     ros::Publisher pub_temperature{"/sensor_set/temperature", &msg_temperature};
+    ros::Publisher pub_power{"/body_control/power_state", &msg_power};
     ros::Subscriber<std_msgs::Bool, ros_board> sub_emergency{"/control/request_emergency_stop", &ros_board::callback_emergency, this};
     ros::Subscriber<std_msgs::Bool, ros_board> sub_poweroff{"/control/request_power_off", &ros_board::callback_poweroff, this};
 };
