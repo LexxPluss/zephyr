@@ -1,9 +1,12 @@
 #include <device.h>
 #include <drivers/i2c.h>
+#include <logging/log.h>
 #include "misc_controller.hpp"
 #include "rosdiagnostic.hpp"
 
 namespace {
+
+LOG_MODULE_REGISTER(misc);
 
 class misc_controller_impl {
 public:

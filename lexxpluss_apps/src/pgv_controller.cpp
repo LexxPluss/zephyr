@@ -2,6 +2,7 @@
 #include <device.h>
 #include <drivers/gpio.h>
 #include <drivers/uart.h>
+#include <logging/log.h>
 #include <sys/ring_buffer.h>
 #include "pgv_controller.hpp"
 #include "rosdiagnostic.hpp"
@@ -10,6 +11,8 @@ k_msgq msgq_pgv2ros;
 k_msgq msgq_ros2pgv;
 
 namespace {
+
+LOG_MODULE_REGISTER(pgv);
 
 char __aligned(4) msgq_pgv2ros_buffer[8 * sizeof (msg_pgv2ros)];
 char __aligned(4) msgq_ros2pgv_buffer[8 * sizeof (msg_ros2pgv)];

@@ -2,6 +2,7 @@
 #include <disk/disk_access.h>
 #include <fs/fs.h>
 #include <ff.h>
+#include <logging/log.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -10,6 +11,8 @@
 k_msgq msgq_log;
 
 namespace {
+
+LOG_MODULE_REGISTER(log);
 
 char __aligned(4) msgq_log_buffer[8 * sizeof (msg_log)];
 
@@ -165,7 +168,7 @@ public:
     }
     void run() {
         if (disk_access_init("SD") == 0) {
-            printk("SD OK\n");
+            LOG_INF("SD OK\n");
             mount.type = FS_FATFS;
             mount.fs_data = &fatfs;
             mount.mnt_point = sdroot;
