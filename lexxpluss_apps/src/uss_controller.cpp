@@ -22,7 +22,7 @@ public:
         }
         return 0;
     }
-    void get_distance(uint32_t distance[2]) const {
+    void get_distance(uint32_t (&distance)[2]) const {
         distance[0] = this->distance[0];
         distance[1] = this->distance[1];
     }
