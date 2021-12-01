@@ -378,8 +378,15 @@ public:
             return -1;
         }
     }
-    void act_current() {
+    void set_current_monitor() {
         current_monitor = !current_monitor;
+    }
+    void info(const shell *shell) const {
+        int32_t encoder[ACTUATOR_NUM], current[ACTUATOR_NUM];
+        calculator.get_pulse(encoder);
+        get_current(current);
+        for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
+            shell_print(shell, "actuator: %d encoder: %dpulse current: %dmV", i, encoder[i], current[i]);
     }
 private:
     void handle_control(const msg_ros2actuator &msg) {
@@ -434,13 +441,13 @@ private:
     static constexpr uint32_t CONTROL_PERIOD_NS{1000000000ULL / CONTROL_HZ};
 } impl;
 
-static int cmd_act_init(const shell *shell, size_t argc, char **argv)
+static int cmd_init(const shell *shell, size_t argc, char **argv)
 {
     impl.init_location();
     return 0;
 }
 
-static int cmd_act_locate(const shell *shell, size_t argc, char **argv)
+static int cmd_locate(const shell *shell, size_t argc, char **argv)
 {
     uint8_t location[ACTUATOR_NUM]{0, 0, 0}, power[ACTUATOR_NUM]{0, 0, 0}, detail[ACTUATOR_NUM]{0, 0, 0};
     if (argc < 3) {
@@ -469,16 +476,23 @@ static int cmd_act_locate(const shell *shell, size_t argc, char **argv)
     return 0;
 }
 
-static int cmd_act_current(const shell *shell, size_t argc, char **argv)
+static int cmd_current(const shell *shell, size_t argc, char **argv)
 {
-    impl.act_current();
+    impl.set_current_monitor();
+    return 0;
+}
+
+static int cmd_info(const shell *shell, size_t argc, char **argv)
+{
+    impl.info(shell);
     return 0;
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_act,
-    SHELL_CMD(init, NULL, "Actuator initialize command", cmd_act_init),
-    SHELL_CMD(loc, NULL, "Actuator locate command", cmd_act_locate),
-    SHELL_CMD(current, NULL, "Actuator current monitor", cmd_act_current),
+    SHELL_CMD(init, NULL, "Actuator initialize command", cmd_init),
+    SHELL_CMD(loc, NULL, "Actuator locate command", cmd_locate),
+    SHELL_CMD(current, NULL, "Actuator current monitor", cmd_current),
+    SHELL_CMD(info, NULL, "Actuator information", cmd_info),
     SHELL_SUBCMD_SET_END
 );
 SHELL_CMD_REGISTER(act, &sub_act, "Actuator commands", NULL);

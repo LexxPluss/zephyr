@@ -1,6 +1,7 @@
 #include <device.h>
 #include <drivers/sensor.h>
 #include <logging/log.h>
+#include <shell/shell.h>
 #include "imu_controller.hpp"
 #include "rosdiagnostic.hpp"
 
@@ -61,6 +62,20 @@ public:
             k_msleep(5000);
         }
     }
+    void info(const shell *shell) {
+        msg_imu2ros m{message};
+        shell_print(shell,
+                    "accel: %f %f %f (m/s/s)\n"
+                    "gyro: %f %f %f (deg/s)\n"
+                    "vel: %f %f %f (m/s)\n"
+                    "ang: %f %f %f (deg)\n"
+                    "temp: %fdeg",
+                    m.accel[0], m.accel[1], m.accel[2],
+                    m.gyro[0], m.gyro[1], m.gyro[2],
+                    m.delta_vel[0], m.delta_vel[1], m.delta_vel[2],
+                    m.delta_ang[0], m.delta_ang[1], m.delta_ang[2],
+                    m.temp);
+    }
 private:
     float get_sensor_value_as_float(enum sensor_channel chan, uint32_t offset) const {
         chan = static_cast<enum sensor_channel>(static_cast<uint32_t>(chan) + offset);
@@ -74,6 +89,18 @@ private:
     const device *dev{nullptr};
     msg_imu2ros message;
 } impl;
+
+static int cmd_info(const shell *shell, size_t argc, char **argv)
+{
+    impl.info(shell);
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_imu,
+    SHELL_CMD(info, NULL, "IMU information", cmd_info),
+    SHELL_SUBCMD_SET_END
+);
+SHELL_CMD_REGISTER(imu, &sub_imu, "IMU commands", NULL);
 
 }
 

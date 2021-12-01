@@ -1,6 +1,7 @@
 #include <device.h>
 #include <drivers/i2c.h>
 #include <logging/log.h>
+#include <shell/shell.h>
 #include "misc_controller.hpp"
 #include "rosdiagnostic.hpp"
 
@@ -46,6 +47,15 @@ public:
             k_msleep(5000);
         }
     }
+    void info(const shell *shell) const {
+        shell_print(shell,
+                    "main: %fdeg\n"
+                    "actuator: %fdeg %fdeg %fdeg",
+                    get_main_board_temp(),
+                    get_actuator_board_temp(0),
+                    get_actuator_board_temp(1),
+                    get_actuator_board_temp(2));
+    }
     float get_main_board_temp() const {return temperature[0];}
     float get_actuator_board_temp(int index) const {return temperature[index];}
 private:
@@ -54,6 +64,18 @@ private:
     float temperature[TEMPERATURE_NUM]{0.0f, 0.0f, 0.0f, 0.0f};
     static constexpr uint8_t ADDR{0b1001000};
 } impl;
+
+static int cmd_info(const shell *shell, size_t argc, char **argv)
+{
+    impl.info(shell);
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_misc,
+    SHELL_CMD(info, NULL, "Misc information", cmd_info),
+    SHELL_SUBCMD_SET_END
+);
+SHELL_CMD_REGISTER(misc, &sub_misc, "Misc commands", NULL);
 
 }
 
