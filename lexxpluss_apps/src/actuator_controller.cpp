@@ -59,7 +59,7 @@ public:
             return -1;
         return 0;
     }
-    void get_count(int16_t data[ACTUATOR_NUM]) const {
+    void get_count(int16_t (&data)[ACTUATOR_NUM]) const {
         data[0] = TIM1->CNT;
         TIM1->CNT = 0;
         data[1] = TIM8->CNT;
@@ -178,11 +178,11 @@ public:
     int32_t get_location(int index) const {
         return static_cast<float>(pulse_value[index]) * mm_per_pulse[index];
     }
-    void get_pulse(int32_t value[ACTUATOR_NUM]) const {
+    void get_pulse(int32_t (&value)[ACTUATOR_NUM]) const {
         for (uint32_t i{0}; i < ACTUATOR_NUM; ++i)
             value[i] = pulse_value[i];
     }
-    void get_delta_pulse(int32_t value[ACTUATOR_NUM]) {
+    void get_delta_pulse(int32_t (&value)[ACTUATOR_NUM]) {
         for (uint32_t i{0}; i < ACTUATOR_NUM; ++i) {
             value[i] = pulse_value[i] - prev_pulse_value[i];
             prev_pulse_value[i] = pulse_value[i];
@@ -399,7 +399,7 @@ private:
             }
         }
     }
-    void get_current(int32_t data[ACTUATOR_NUM]) const {
+    void get_current(int32_t (&data)[ACTUATOR_NUM]) const {
         data[0] = adc_reader::get(adc_reader::INDEX_ACTUATOR_0);
         data[1] = adc_reader::get(adc_reader::INDEX_ACTUATOR_1);
         data[2] = adc_reader::get(adc_reader::INDEX_ACTUATOR_2);
@@ -409,7 +409,7 @@ private:
     int32_t get_trolley() const {
         return adc_reader::get(adc_reader::INDEX_TROLLEY);
     }
-    void get_fail(bool fail[ACTUATOR_NUM]) const {
+    void get_fail(bool (&fail)[ACTUATOR_NUM]) const {
         fail[0] = gpio_pin_get(dev_fail_01, 11) == 0;
         fail[1] = gpio_pin_get(dev_fail_01, 12) == 0;
         fail[2] = gpio_pin_get(dev_fail_2, 4) == 0;
