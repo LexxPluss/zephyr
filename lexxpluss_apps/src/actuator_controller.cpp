@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include "adc_reader.hpp"
 #include "actuator_controller.hpp"
+#include "rosdiagnostic.hpp"
 
 k_msgq msgq_actuator2ros;
 k_msgq msgq_ros2actuator;
@@ -267,6 +268,14 @@ public:
             k_msleep(10);
         }
     }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "actuator", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
+        }
+    }
     void wait_encoder_stabilize() {
         for (int i{0}; i < 10; ++i) {
             int32_t value[ACTUATOR_NUM];
@@ -484,6 +493,7 @@ void actuator_controller::init()
 void actuator_controller::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+    impl.run_error();
 }
 
 int actuator_controller::init_location()

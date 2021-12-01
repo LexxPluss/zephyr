@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/sensor.h>
+#include "rosdiagnostic.hpp"
 #include "uss_controller.hpp"
 
 k_msgq msgq_uss2ros;
@@ -29,6 +30,7 @@ public:
     static void runner(void *p1, void *p2, void *p3) {
         uss_fetcher *self{static_cast<uss_fetcher*>(p1)};
         self->run();
+        self->run_error();
     }
     k_thread thread;
 private:
@@ -49,6 +51,14 @@ private:
                 }
             }
             k_msleep(1);
+        }
+    }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "uss", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
         }
     }
     const device *dev[2]{nullptr, nullptr};

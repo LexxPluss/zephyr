@@ -2,6 +2,7 @@
 #include <drivers/sensor.h>
 #include <logging/log.h>
 #include "imu_controller.hpp"
+#include "rosdiagnostic.hpp"
 
 k_msgq msgq_imu2ros;
 
@@ -52,6 +53,14 @@ public:
             k_msleep(1);
         }
     }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "imu", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
+        }
+    }
 private:
     float get_sensor_value_as_float(enum sensor_channel chan, uint32_t offset) const {
         chan = static_cast<enum sensor_channel>(static_cast<uint32_t>(chan) + offset);
@@ -76,6 +85,7 @@ void imu_controller::init()
 void imu_controller::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+    impl.run_error();
 }
 
 k_thread imu_controller::thread;

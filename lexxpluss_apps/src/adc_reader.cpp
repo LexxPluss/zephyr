@@ -1,6 +1,7 @@
 #include <device.h>
 #include <drivers/adc.h>
 #include "adc_reader.hpp"
+#include "rosdiagnostic.hpp"
 
 namespace {
 
@@ -16,6 +17,14 @@ public:
         while (true) {
             read_all_channels();
             k_msleep(20);
+        }
+    }
+    void run_error() const {
+        msg_rosdiag message{msg_rosdiag::ERROR, "adc", "no device"};
+        while (true) {
+            while (k_msgq_put(&msgq_rosdiag, &message, K_NO_WAIT) != 0)
+                k_msgq_purge(&msgq_rosdiag);
+            k_msleep(5000);
         }
     }
     int32_t get(int index) const {
@@ -65,6 +74,7 @@ void adc_reader::init()
 void adc_reader::run(void *p1, void *p2, void *p3)
 {
     impl.run();
+    impl.run_error();
 }
 
 int32_t adc_reader::get(int index)
