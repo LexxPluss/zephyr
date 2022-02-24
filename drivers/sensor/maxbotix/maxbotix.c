@@ -108,11 +108,13 @@ static int maxbotix_sample_fetch(const struct device *dev, enum sensor_channel c
         gpio_remove_callback(data->echo_dev, &data->cb_data.cb);
         return -EIO;
     }
+    int result = 0;
     uint32_t count = data->cb_data.end_time - data->cb_data.start_time;
     count = k_cyc_to_us_near32(count);
     if (count < 20 || count > 5000) {
         data->sensor_value.val1 = 0;
         data->sensor_value.val2 = 0;
+        result = -ENODATA;
     } else {
         uint32_t micrometer = count * 1000;
         data->sensor_value.val1 = (micrometer / 1000000);
@@ -123,7 +125,7 @@ static int maxbotix_sample_fetch(const struct device *dev, enum sensor_channel c
         uint32_t sleep_to_next = (period_us - (measure_us + count)) / 1000;
         k_msleep(sleep_to_next);
     }
-    return 0;
+    return result;
 }
 
 static int maxbotix_channel_get(const struct device *dev, enum sensor_channel chan, struct sensor_value *val)
