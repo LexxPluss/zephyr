@@ -84,7 +84,7 @@ static int maxbotix_init(const struct device *dev)
     err = k_sem_init(&data->cb_data.semaphore, 0, 1);
     if (0 != err)
         return err;
-    gpio_pin_set(data->trig_dev, cfg->trig_pin, 1);
+    gpio_pin_set(data->trig_dev, cfg->trig_pin, 0);
     data->sensor_value.val1 = 0;
     data->sensor_value.val2 = 0;
     data->cb_data.state = MAXBOTIX_STATE_IDLE;
@@ -95,10 +95,14 @@ static int maxbotix_init(const struct device *dev)
 static int maxbotix_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
     struct maxbotix_data *data = dev->data;
+    const struct maxbotix_cfg *cfg  = dev->config;
     if (unlikely((SENSOR_CHAN_ALL != chan) && (SENSOR_CHAN_DISTANCE != chan)))
         return -ENOTSUP;
     gpio_add_callback(data->echo_dev, &data->cb_data.cb);
     data->cb_data.state = MAXBOTIX_STATE_RISING_EDGE;
+    gpio_pin_set(data->trig_dev, cfg->trig_pin, 1);
+    k_busy_wait(20);
+    gpio_pin_set(data->trig_dev, cfg->trig_pin, 0);
     if (k_sem_take(&data->cb_data.semaphore, K_MSEC(200)) || data->cb_data.state != MAXBOTIX_STATE_FINISHED) {
         LOG_DBG("No response from MAXBOTIX");
         gpio_remove_callback(data->echo_dev, &data->cb_data.cb);
@@ -115,6 +119,11 @@ static int maxbotix_sample_fetch(const struct device *dev, enum sensor_channel c
         uint32_t micrometer = count * 1000;
         data->sensor_value.val1 = (micrometer / 1000000);
         data->sensor_value.val2 = (micrometer % 1000000);
+    }
+    static const uint32_t period_us = 98000, measure_us = 85000, count_max_us = period_us - measure_us;
+    if (count < count_max_us) {
+        uint32_t sleep_to_next = (period_us - (measure_us + count)) / 1000;
+        k_msleep(sleep_to_next);
     }
     return result;
 }
