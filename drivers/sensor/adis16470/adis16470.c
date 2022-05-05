@@ -162,7 +162,7 @@ static int adis16470_self_test(const struct adis16470_data *data)
 
 static int adis16470_configure(const struct adis16470_data *data)
 {
-    uint16_t value = 49;
+    uint16_t value = 39;
     int result = adis16470_reg_write(data, ADIS16470_REG_DEC_RATE, value);
     if (result != 0)
         return result;
