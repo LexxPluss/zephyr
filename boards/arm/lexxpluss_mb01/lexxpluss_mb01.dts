@@ -257,53 +257,22 @@
 		compatible = "fixed-partitions";
 		#address-cells = <1>;
 		#size-cells = <1>;
-
-		/*
-		 * Sector 0 and Sector 1 are allocated
-		 * for the bootloader (32kb + 32kb).
-		 */
 		boot_partition: partition@0 {
 			label = "mcuboot";
 			reg = <0x0 0x00010000>;
 		};
-
-		/*
-		 * Sector 2 and Sector 3 are allocated
-		 * for storegae (32kb + 32kb).
-		 */
 		storage_partition: partition@10000 {
 			label = "storage";
 			reg = <0x00010000 0x00010000>;
 		};
-
-		/*
-		 * Sector 4 is unused (128kb).
-		 */
-
-		/*
-		 * Sector 5 is allocated
-		 * for image-0 (256kb).
-		 */
 		image_0_primary_partition: partition@40000 {
 			label = "image-0";
 			reg = <0x00040000 0x00040000>;
 		};
-
-		/*
-		 * Sector 6 is allocated
-		 * for image-1 (256kb).
-		 */
 		image_0_secondary_partition: partition@80000 {
 			label = "image-1";
 			reg = <0x00080000 0x00040000>;
 		};
-
-		/*
-		 * Sector 7 is allocated
-		 * for scratch (256kb).
-		 * This partition is
-		 * unnecessary.
-		 */
 		scratch_partition: partition@C0000 {
 			label = "image-scratch";
 			reg = <0x000C0000 0x00040000>;
