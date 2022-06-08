@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
+add_subdirectory_ifdef(CONFIG_ADIS16470		adis16470)
+add_subdirectory_ifdef(CONFIG_MAXBOTIX		maxbotix)
 add_subdirectory_ifdef(CONFIG_ADT7420		adt7420)
 add_subdirectory_ifdef(CONFIG_ADXL345		adxl345)
 add_subdirectory_ifdef(CONFIG_ADXL362		adxl362)

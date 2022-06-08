@@ -1,0 +1,3 @@
+config BOARD_LEXXPLUSS_MB01
+	bool "LexxPluss Main Control Unit board"
+	depends on SOC_STM32F769XX

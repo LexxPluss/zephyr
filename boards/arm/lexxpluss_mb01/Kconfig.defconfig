@@ -1,0 +1,6 @@
+if BOARD_LEXXPLUSS_MB01
+
+config BOARD
+	default "lexxpluss_mb01"
+
+endif # BOARD_LEXXPLUSS_MB01

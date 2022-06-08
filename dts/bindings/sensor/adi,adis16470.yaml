@@ -1,0 +1,5 @@
+description: ADIS16470 sensor
+
+compatible: "adi,adis16470"
+
+include: spi-device.yaml

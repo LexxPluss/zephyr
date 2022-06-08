@@ -9,6 +9,9 @@ config HAS_STM32LIB
 config HAS_STM32CUBE
 	bool
 	select HAS_CMSIS_CORE
+	select USE_STM32_HAL_TIM
+	select USE_STM32_HAL_TIM_EX
+	select USE_STM32_HAL_GPIO
 	depends on SOC_FAMILY_STM32
 
 if HAS_STM32CUBE
