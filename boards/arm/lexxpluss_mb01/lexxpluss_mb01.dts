@@ -8,6 +8,7 @@
 	compatible = "st,stm32f769bg-lexxpluss";
 
 	chosen {
+		zephyr,code-partition = &image_0_primary_partition;
 		zephyr,console = &usart3;
 		zephyr,shell-uart = &usart3;
 		zephyr,sram = &sram0;
