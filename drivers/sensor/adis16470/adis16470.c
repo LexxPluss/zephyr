@@ -210,9 +210,9 @@ static int adis16470_init(const struct device *dev)
         LOG_DBG("spi device not found: %s", config->spi_name);
         return -EINVAL;
     }
-    data->dr = device_get_binding("GPIOJ");
+    data->dr = device_get_binding("GPIOF");
     if (data->dr == NULL) {
-        LOG_DBG("spi device not found: GPIOJ");
+        LOG_DBG("spi device not found: GPIOF");
         return -EINVAL;
     }
     gpio_pin_configure(data->dr, 2, GPIO_INPUT | GPIO_ACTIVE_HIGH);
