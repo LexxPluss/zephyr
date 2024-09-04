@@ -65,7 +65,3 @@ jobs:
       - name: Upload Event Details
         if: always()
         uses: actions/upload-artifact@v2
-        with:
-          name: event
-          path: |
-            ${{ github.event_path }}
