@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@master
         with:
           name: Bluetooth Test Results
           path: ./bsim_bt_out/bsim_results.xml

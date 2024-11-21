@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload Unit Test Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@master
         with:
           name: Unit Test Results (Subset ${{ matrix.subset }})
           path: twister-out/twister.xml
