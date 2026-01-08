@@ -86,6 +86,7 @@ static inline void handle_overflow(struct can_stm32_data *data, const char *fifo
 {
 	uint32_t now;
 	uint32_t start_time;
+	bool should_log = false;
 	k_spinlock_key_t key;
 
 	now = k_uptime_get_32();
@@ -97,11 +98,22 @@ static inline void handle_overflow(struct can_stm32_data *data, const char *fifo
 	}
 	data->overflow_diag.last_timestamp = now;
 	data->overflow_diag.count++;
-	start_time = data->overflow_diag.protection_start_time;
+
+	/* Check protection period only once on first expiration */
+	if (!data->overflow_diag.protection_expired) {
+		start_time = data->overflow_diag.protection_start_time;
+		if ((now - start_time) > PROTECTION_PERIOD_MS) {
+			data->overflow_diag.protection_expired = true;
+			should_log = true;
+		}
+	} else {
+		/* Protection period already expired, log every occurrence */
+		should_log = true;
+	}
 
 	k_spin_unlock(&data->lock, key);
 
-	if ((now - start_time) > PROTECTION_PERIOD_MS) {
+	if (should_log) {
 		LOG_ERR("%s Overflow", fifo_name);
 	}
 }
@@ -536,6 +548,7 @@ static int can_stm32_init(const struct device *dev)
 #ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
 	memset(&data->lock, 0x00, sizeof(data->lock));
 	data->overflow_diag.protection_start_time = k_uptime_get_32();
+	data->overflow_diag.protection_expired = false;
 #endif
 
 	data->filter_usage = (1ULL << CAN_MAX_NUMBER_OF_FILTERS) - 1ULL;

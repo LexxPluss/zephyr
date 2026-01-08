@@ -72,6 +72,7 @@ struct can_stm32_data {
 		uint32_t first_timestamp;
 		uint32_t last_timestamp;
 		uint32_t protection_start_time;
+		bool protection_expired;
 	} overflow_diag;
 	struct k_spinlock lock;
 #endif
