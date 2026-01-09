@@ -364,8 +364,17 @@ typedef enum can_state (*can_get_state_t)(const struct device *dev,
  * observed.  
  */ 
 struct can_overflow_diag_info {
+	/** Total count of overflow events detected. */
 	uint32_t count;
+	/**
+	 * Milliseconds elapsed from the protection period start to the first
+	 * overflow event (relative timestamp offset from protection_start_time).
+	 */
 	uint32_t first_timestamp;
+	/**
+	 * Milliseconds elapsed from the protection period start to the most
+	 * recent overflow event (relative timestamp offset from protection_start_time).
+	 */
 	uint32_t last_timestamp;
 };
 
@@ -875,7 +884,10 @@ enum can_state z_impl_can_get_state(const struct device *dev,
 /**
  * @brief Get overflow diagnostics
  *
- * Returns the overflow diagnostics of the CAN controller.
+ * Returns the overflow diagnostics of the CAN controller, including the
+ * count of overflow events and their timestamps. The first_timestamp and
+ * last_timestamp fields contain relative timestamps (in milliseconds) offset
+ * from the protection period start time, based on k_uptime_get_32().
  *
  * @param dev     Pointer to the device structure for the driver instance.
  * @param info    Pointer to the destination structure.
