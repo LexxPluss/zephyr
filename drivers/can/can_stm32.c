@@ -486,22 +486,16 @@ int can_stm32_get_core_clock(const struct device *dev, uint32_t *rate)
 static int can_stm32_get_overflow_diag(const struct device *dev, struct can_overflow_diag_info *info)
 {
 	struct can_stm32_data *data = dev->data;
-	uint32_t first, last, start;
-	uint32_t first_offset, last_offset;
 	k_spinlock_key_t key;
 
 	key = k_spin_lock(&data->lock);
 
 	info->count = data->overflow_diag.count;
 	if (data->overflow_diag.count > 0) {
-		first = data->overflow_diag.first_timestamp;
-		last = data->overflow_diag.last_timestamp;
-		start = data->overflow_diag.protection_start_time;
-		first_offset = first - start;
-		last_offset = last - start;
-
-		info->first_timestamp = first_offset;
-		info->last_timestamp = last_offset;
+		info->first_timestamp = data->overflow_diag.first_timestamp -
+					data->overflow_diag.protection_start_time;
+		info->last_timestamp = data->overflow_diag.last_timestamp -
+					data->overflow_diag.protection_start_time;
 	} else {
 		info->first_timestamp = 0;
 		info->last_timestamp = 0;
