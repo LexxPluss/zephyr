@@ -536,8 +536,8 @@ static int can_stm32_init(const struct device *dev)
 
 #ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
 	memset(&data->lock, 0x00, sizeof(data->lock));
+	memset(&data->overflow_diag, 0x00, sizeof(data->overflow_diag));
 	data->overflow_diag.protection_start_time = k_uptime_get_32();
-	data->overflow_diag.protection_expired = false;
 #endif
 
 	data->filter_usage = (1ULL << CAN_MAX_NUMBER_OF_FILTERS) - 1ULL;
