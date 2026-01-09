@@ -53,6 +53,61 @@ LOG_MODULE_DECLARE(can_driver, CONFIG_CAN_LOG_LEVEL);
 static const uint8_t filter_in_bank[] = {2, 4, 1, 2};
 static const uint8_t reg_demand[] = {2, 1, 4, 2};
 
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+#define PROTECTION_PERIOD_MS CONFIG_CAN_STM32_PROTECTION_PERIOD_MS
+
+/**
+ * @brief Handle and record a CAN FIFO overflow event.
+ *
+ * Updates overflow diagnostics (count, first/last timestamps) and logs
+ * overflow errors for the specified FIFO. All updates are performed
+ * under @p data->lock for thread-safe access.
+ *
+ * Rate-limiting: Overflow events are silently counted during an initial
+ * protection period (PROTECTION_PERIOD_MS). Once this period expires,
+ * the protection_expired flag is set and all subsequent overflow events
+ * are logged. The protection window never resets.
+ *
+ * @param data      Pointer to the controller runtime data.
+ * @param fifo_name Name of the affected FIFO for log messages.
+ */
+static inline void handle_overflow(struct can_stm32_data *data, const char *fifo_name)
+{
+	uint32_t now;
+	uint32_t start_time;
+	bool should_log = false;
+	k_spinlock_key_t key;
+
+	now = k_uptime_get_32();
+
+	key = k_spin_lock(&data->lock);
+
+	if (data->overflow_diag.count == 0) {
+		data->overflow_diag.first_timestamp = now;
+	}
+	data->overflow_diag.last_timestamp = now;
+	data->overflow_diag.count++;
+
+	/* Check protection period only once on first expiration */
+	if (!data->overflow_diag.protection_expired) {
+		start_time = data->overflow_diag.protection_start_time;
+		if ((now - start_time) > PROTECTION_PERIOD_MS) {
+			data->overflow_diag.protection_expired = true;
+			should_log = true;
+		}
+	} else {
+		/* Protection period already expired, log every occurrence */
+		should_log = true;
+	}
+
+	k_spin_unlock(&data->lock, key);
+
+	if (should_log) {
+		LOG_ERR("%s Overflow", fifo_name);
+	}
+}
+#endif
+
 static void can_stm32_signal_tx_complete(struct can_mailbox *mb)
 {
 	if (mb->tx_callback) {
@@ -113,7 +168,22 @@ void can_stm32_rx_isr_handler(CAN_TypeDef *can, struct can_stm32_data *data)
 	}
 
 	if (can->RF0R & CAN_RF0R_FOVR0) {
-		LOG_ERR("RX FIFO Overflow");
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+		can->RF0R |= CAN_RF0R_FOVR0; /* Clear flag */
+		handle_overflow(data, "RX FIFO0");
+#else
+		LOG_ERR("RX FIFO0 Overflow");
+#endif
+	}
+
+	/* Also check FIFO1 */
+	if (can->RF1R & CAN_RF1R_FOVR1) {
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+		can->RF1R |= CAN_RF1R_FOVR1; /* Clear flag */
+		handle_overflow(data, "RX FIFO1");
+#else
+		LOG_ERR("RX FIFO1 Overflow");
+#endif
 	}
 }
 
@@ -412,6 +482,30 @@ int can_stm32_get_core_clock(const struct device *dev, uint32_t *rate)
 	return 0;
 }
 
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+static int can_stm32_get_overflow_diag(const struct device *dev, struct can_overflow_diag_info *info)
+{
+	struct can_stm32_data *data = dev->data;
+	k_spinlock_key_t key;
+
+	key = k_spin_lock(&data->lock);
+
+	info->count = data->overflow_diag.count;
+	if (data->overflow_diag.count > 0) {
+		info->first_timestamp = data->overflow_diag.first_timestamp -
+					data->overflow_diag.protection_start_time;
+		info->last_timestamp = data->overflow_diag.last_timestamp -
+					data->overflow_diag.protection_start_time;
+	} else {
+		info->first_timestamp = 0;
+		info->last_timestamp = 0;
+	}
+
+	k_spin_unlock(&data->lock, key);
+	return 0;
+}
+#endif
+
 static int can_stm32_init(const struct device *dev)
 {
 	const struct can_stm32_config *cfg = DEV_CFG(dev);
@@ -433,6 +527,12 @@ static int can_stm32_init(const struct device *dev)
 	data->mb1.tx_callback = NULL;
 	data->mb2.tx_callback = NULL;
 	data->state_change_isr = NULL;
+
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+	memset(&data->lock, 0x00, sizeof(data->lock));
+	memset(&data->overflow_diag, 0x00, sizeof(data->overflow_diag));
+	data->overflow_diag.protection_start_time = k_uptime_get_32();
+#endif
 
 	data->filter_usage = (1ULL << CAN_MAX_NUMBER_OF_FILTERS) - 1ULL;
 	(void)memset(data->rx_cb, 0, sizeof(data->rx_cb));
@@ -1105,6 +1205,9 @@ static const struct can_driver_api can_api_funcs = {
 	.get_state = can_stm32_get_state,
 #ifndef CONFIG_CAN_AUTO_BUS_OFF_RECOVERY
 	.recover = can_stm32_recover,
+#endif
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+	.get_overflow_diag = can_stm32_get_overflow_diag,
 #endif
 	.register_state_change_isr = can_stm32_register_state_change_isr,
 	.get_core_clock = can_stm32_get_core_clock,

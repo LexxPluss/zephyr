@@ -9,6 +9,7 @@
 #define ZEPHYR_DRIVERS_CAN_STM32_CAN_H_
 
 #include <drivers/can.h>
+#include <kernel.h>
 
 #define DEV_DATA(dev) ((struct can_stm32_data *const)(dev)->data)
 #define DEV_CFG(dev) \
@@ -65,6 +66,16 @@ struct can_stm32_data {
 	can_rx_callback_t rx_cb[CONFIG_CAN_MAX_FILTER];
 	void *cb_arg[CONFIG_CAN_MAX_FILTER];
 	can_state_change_isr_t state_change_isr;
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+	struct {
+		uint32_t count;
+		uint32_t first_timestamp;
+		uint32_t last_timestamp;
+		uint32_t protection_start_time;
+		bool protection_expired;
+	} overflow_diag;
+	struct k_spinlock lock;
+#endif
 };
 
 struct can_stm32_config {

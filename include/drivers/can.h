@@ -355,6 +355,33 @@ typedef int (*can_recover_t)(const struct device *dev, k_timeout_t timeout);
 typedef enum can_state (*can_get_state_t)(const struct device *dev,
 					  struct can_bus_err_cnt *err_cnt);
 
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+/**  
+ * @brief Diagnostic information about CAN receive FIFO overflows.  
+ *  
+ * This structure is used with @ref can_get_overflow_diag_t to report how many  
+ * overflow events have occurred and when they were first and most recently  
+ * observed.  
+ */ 
+struct can_overflow_diag_info {
+	/** Total count of overflow events detected. */
+	uint32_t count;
+	/**
+	 * Milliseconds elapsed from the protection period start to the first
+	 * overflow event (relative timestamp offset from protection_start_time).
+	 */
+	uint32_t first_timestamp;
+	/**
+	 * Milliseconds elapsed from the protection period start to the most
+	 * recent overflow event (relative timestamp offset from protection_start_time).
+	 */
+	uint32_t last_timestamp;
+};
+
+typedef int (*can_get_overflow_diag_t)(const struct device *dev,
+										struct can_overflow_diag_info *info);
+#endif
+
 typedef void(*can_register_state_change_isr_t)(const struct device *dev,
 					       can_state_change_isr_t isr);
 
@@ -392,6 +419,9 @@ __subsystem struct can_driver_api {
 	can_recover_t recover;
 #endif
 	can_get_state_t get_state;
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+	can_get_overflow_diag_t get_overflow_diag;
+#endif
 	can_register_state_change_isr_t register_state_change_isr;
 	can_get_core_clock_t get_core_clock;
 	/* Min values for the timing registers */
@@ -849,6 +879,38 @@ enum can_state z_impl_can_get_state(const struct device *dev,
 
 	return api->get_state(dev, err_cnt);
 }
+
+#ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+/**
+ * @brief Get overflow diagnostics
+ *
+ * Returns the overflow diagnostics of the CAN controller, including the
+ * count of overflow events and their timestamps. The first_timestamp and
+ * last_timestamp fields contain relative timestamps (in milliseconds) offset
+ * from the protection period start time, based on k_uptime_get_32().
+ *
+ * @param dev     Pointer to the device structure for the driver instance.
+ * @param info    Pointer to the destination structure.
+ *
+ * @retval 0 on success.
+ * @retval negative on error.
+ */
+__syscall int can_get_overflow_diag(const struct device *dev,
+				      struct can_overflow_diag_info *info);
+
+static inline int z_impl_can_get_overflow_diag(const struct device *dev,
+					       struct can_overflow_diag_info *info)
+{
+	const struct can_driver_api *api =
+			(const struct can_driver_api *)dev->api;
+
+	if (api->get_overflow_diag == NULL) {
+		return -ENOSYS;
+	}
+
+	return api->get_overflow_diag(dev, info);
+}
+#endif
 
 /**
  * @brief Recover from bus-off state
