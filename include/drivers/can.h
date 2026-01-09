@@ -896,10 +896,10 @@ enum can_state z_impl_can_get_state(const struct device *dev,
  * @retval negative on error.
  */
 __syscall int can_get_overflow_diag(const struct device *dev,
-                                    struct can_overflow_diag_info *info);
+				      struct can_overflow_diag_info *info);
 
 static inline int z_impl_can_get_overflow_diag(const struct device *dev,
-                                               struct can_overflow_diag_info *info)
+					       struct can_overflow_diag_info *info)
 {
 	const struct can_driver_api *api =
 			(const struct can_driver_api *)dev->api;
