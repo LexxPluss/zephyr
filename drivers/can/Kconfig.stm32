@@ -26,7 +26,10 @@ config CAN_STM32_OVERFLOW_DIAG
 	depends on CAN_STM32
 	default n
 	help
-	  Enable RX FIFO overflow diagnostics for STM32 CAN driver.
+	  Enable RX FIFO overflow diagnostics for the STM32 CAN driver.
+	  When enabled, the driver records RX FIFO overflow statistics that can
+	  be queried via the can_get_overflow_diag API, and logs overflow events
+	  with rate limiting controlled by CAN_STM32_PROTECTION_PERIOD_MS.
 
 config CAN_STM32_PROTECTION_PERIOD_MS
 	int "CAN overflow protection period in milliseconds"
