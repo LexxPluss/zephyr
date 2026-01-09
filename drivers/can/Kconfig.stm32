@@ -33,5 +33,7 @@ config CAN_STM32_PROTECTION_PERIOD_MS
 	depends on CAN_STM32_OVERFLOW_DIAG
 	default 60000
 	help
-	  Protection period in milliseconds to avoid CAN overflow log messages
-	  flooding.
+	  Protection period in milliseconds to avoid CAN overflow log message
+	  flooding: during this period, RX FIFO overflow events are counted
+	  silently, and after the period expires, each overflow is logged and
+	  the protection period restarts.
