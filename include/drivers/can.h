@@ -356,6 +356,13 @@ typedef enum can_state (*can_get_state_t)(const struct device *dev,
 					  struct can_bus_err_cnt *err_cnt);
 
 #ifdef CONFIG_CAN_STM32_OVERFLOW_DIAG
+/**  
+ * @brief Diagnostic information about CAN receive FIFO overflows.  
+ *  
+ * This structure is used with @ref can_get_overflow_diag_t to report how many  
+ * overflow events have occurred and when they were first and most recently  
+ * observed.  
+ */ 
 struct can_overflow_diag_info {
 	uint32_t count;
 	uint32_t first_timestamp;
@@ -363,7 +370,7 @@ struct can_overflow_diag_info {
 };
 
 typedef int (*can_get_overflow_diag_t)(const struct device *dev,
-                                       struct can_overflow_diag_info *info);
+										struct can_overflow_diag_info *info);
 #endif
 
 typedef void(*can_register_state_change_isr_t)(const struct device *dev,

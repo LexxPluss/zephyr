@@ -59,28 +59,17 @@ static const uint8_t reg_demand[] = {2, 1, 4, 2};
 /**
  * @brief Handle and record a CAN FIFO overflow event.
  *
- * This helper updates the overflow diagnostics in @p data whenever an
- * overflow is detected on a receive FIFO. It records the timestamp of
- * the first and most recent overflow (`first_timestamp` and
- * `last_timestamp`) and increments the accumulated overflow `count`.
- * All updates to the diagnostic structure are performed under
- * @p data->lock to provide thread-safe access.
+ * Updates overflow diagnostics (count, first/last timestamps) and logs
+ * overflow errors for the specified FIFO. All updates are performed
+ * under @p data->lock for thread-safe access.
  *
- * The overflow reporting is rate-limited by a protection period in
- * milliseconds, defined by PROTECTION_PERIOD_MS. The field
- * `protection_start_time` in @p data->overflow_diag marks the start of
- * this protection window. As long as the time since that start is less
- * than or equal to PROTECTION_PERIOD_MS, the function only updates the
- * diagnostics and does not emit a log message. Once the protection
- * period has elapsed (i.e. when (now - protection_start_time) exceeds
- * PROTECTION_PERIOD_MS), the function logs a single error via
- * LOG_ERR("%s Overflow", fifo_name) to indicate that the specified
- * FIFO has experienced an overflow.
+ * Rate-limiting: Overflow events are silently counted during an initial
+ * protection period (PROTECTION_PERIOD_MS). Once this period expires,
+ * the protection_expired flag is set and all subsequent overflow events
+ * are logged. The protection window never resets.
  *
- * @param data      Pointer to the controller runtime data, which holds
- *                  the overflow diagnostic state.
- * @param fifo_name Name of the affected FIFO, used as a label in the
- *                  error log message.
+ * @param data      Pointer to the controller runtime data.
+ * @param fifo_name Name of the affected FIFO for log messages.
  */
 static inline void handle_overflow(struct can_stm32_data *data, const char *fifo_name)
 {
